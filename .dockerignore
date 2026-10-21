@@ -1,0 +1,13 @@
+.env
+*.bak
+*.log
+users.json
+company.json
+audit.log
+__pycache__
+deploy.ps1
+deploy_secrets.sh
+fly.toml
+start.bat
+backup.sh
+AZAL_LR001_Project_DB.xlsx

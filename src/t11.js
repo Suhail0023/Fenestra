@@ -1,0 +1,1 @@
+setTimeout(()=>{fixS();const K=spScopeKeys();SP.m=[{code:"X1",name:K[0],ph:"INS",key:K[0],s:"2026-11-01",f:"2026-12-20"}];try{spBuild();console.log(SP.det.length)}catch(x){console.log(x.message);const L=spLeaves(K[0]);console.log(L.length,L.map(l=>[l.dur,l.start,lnFixed(l)]).slice(0,5))}process.exit(0)},50)

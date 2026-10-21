@@ -1,0 +1,1 @@
+setTimeout(()=>{fixS();const m={};leaves().forEach(l=>{const k=rowFor(l).k;(m[lnTr(l)+" => "+k+" ["+(l.rt?"rt":"fallback")+"]"]=m[lnTr(l)+" => "+k+" ["+(l.rt?"rt":"fallback")+"]"]||[]).push(l.id)});Object.entries(m).forEach(([k,v])=>console.log(v.length,k));process.exit(0)},50)

@@ -1,0 +1,9 @@
+.env
+users.json
+company.json
+audit.log
+backups/
+*.xlsx
+*.bak
+__pycache__/
+*.log

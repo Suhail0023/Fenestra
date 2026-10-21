@@ -1,0 +1,35 @@
+# Fenestra Site on Fly.io. Change `app` to a unique name (fly launch will offer to do it).
+app = "fenestra-site"
+primary_region = "fra"        # closest to the UAE with volumes: fra (Frankfurt) or otp; change if you prefer
+
+[build]
+
+[env]
+  DATA_DIR = "/data"
+  PORT = "8080"
+  TRUST_PROXY = "1"
+  SEED_DEMO_USERS = "0"
+  TZ = "Asia/Dubai"
+
+[[mounts]]
+  source = "fenestra_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # The app keeps its database on one volume and runs reminders in the background: keep exactly one machine running.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

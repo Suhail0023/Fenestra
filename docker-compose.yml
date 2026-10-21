@@ -1,0 +1,18 @@
+services:
+  fenestra:
+    build: .
+    image: fenestra-site
+    ports:
+      - "8080:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATA_DIR: /data
+      PORT: "8080"
+      SEED_DEMO_USERS: "0"
+    volumes:
+      - fenestra-data:/data
+    restart: unless-stopped
+volumes:
+  fenestra-data:
