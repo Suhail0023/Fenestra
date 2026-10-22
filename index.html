@@ -1176,6 +1176,17 @@ V.ipa=()=>{if(!isPMM14())return`<div class="c"><h3>Rates and IPA</h3><p>BOQ rate
 ${sn?`<div class="f" style="margin-top:6px">${sn.st=="Draft"?`<button class="p" onclick="ipaIssue('${sn.m}')">Issue to Main contractor</button><button onclick="ipaRegen('${sn.m}')">Regenerate draft</button>`:`<span class="t">Issued ${fd(sn.id)}${sn.mail?" by email":""}</span>`}</div>`:""}</div>
 <div class="c"><h3>IPAs prepared</h3>${S.ipas.map(x=>`<div class="m">${e(x.no)} · ${x.m} · cut-off ${fd(x.cut)} · net ${money(x.net)} · ${e(x.st)}</div>`).join("")||"<p class=m>None yet. They are prepared automatically on the issue day.</p>"}</div>`};
 
+/* ---------- dashboard: IPA vs contract, MIR / WIR / VO raised vs approved ---------- */
+function dashStats(){const base=S.items.filter(i=>!i.p&&!i.vg).reduce((a,r)=>a+roll(r)*(+r.cr||0),0),vo=S.vo,vApp=vo.filter(v=>v.st=="Approved"),vVal=a=>a.reduce((s,v)=>s+(v.prop?v.prop.amt:0),0),
+ iss=S.ipas.filter(x=>x.st=="Issued").sort((a,b)=>a.m<b.m?-1:1),last=iss[iss.length-1],live=isPMM14()?ipaCalc(T.slice(0,7)).gross:0,
+ wir={all:S.insp.length,ok:S.insp.filter(x=>x.s=="Approved").length,rej:S.insp.filter(x=>x.s=="Rejected").length},mir={all:S.mt.mir.length,ok:S.mt.mir.filter(mirOk).length,rej:S.mt.mir.filter(m=>m.st=="Rejected").length};
+ return{base,rev:base+vVal(vApp),ipaCum:last?last.gross:0,ipaNo:last?last.no:"",nIss:iss.length,live,wir,mir,vo:{all:vo.length,ok:vApp.length,rej:vo.filter(v=>v.st=="Rejected").length,vAll:vVal(vo),vOk:vVal(vApp)}}}
+function statCard(){const s=dashStats(),m=isPMM14(),pct=(a,b)=>b?Math.min(100,a/b*100):0,bar=(v,c)=>`<div style="background:var(--bg);border:1px solid var(--bd,#ccc);border-radius:4px;height:14px"><div style="width:${v}%;height:100%;background:var(--${c});border-radius:3px"></div></div>`,
+ pair=(t,x,o)=>`<div class="c"><div class="m">${t}</div><div class="k">${x.ok} of ${x.all} approved</div>${bar(pct(x.ok,x.all),"ok")}<div class="m" style="margin-top:4px">${x.all-x.ok-x.rej} waiting · ${x.rej} rejected${o||""}</div></div>`;
+ return`<div class="g">${m?`<div class="c"><div class="m">Cumulative IPA raised vs contract value</div><div class="k">${money(s.ipaCum)} <span class="m">of ${money(s.rev)}</span></div>${bar(pct(s.ipaCum,s.rev),"ac")}<div class="m" style="margin-top:4px">${r1(pct(s.ipaCum,s.rev)*10)/10}% of the ${s.vo.vOk?"revised contract value (original "+money(s.base)+" plus approved variations)":"contract value"} · ${s.nIss?s.nIss+" issued, last "+e(s.ipaNo):"no IPA issued yet"} · value to date if issued now: ${money(s.live)}</div></div>`:""}
+${pair("WIR raised vs approved",s.wir)}${pair("MIR raised vs approved",s.mir)}${pair("Variation orders raised vs approved",s.vo,m?` · raised ${money(s.vo.vAll)} · approved ${money(s.vo.vOk)}`:"")}</div>`}
+const _d15=V.dash;V.dash=()=>(PMR()?statCard():"")+_d15();
+
 /* ---- server services: email, WhatsApp, backups, status ---- */
 const _api16=api;api=function(path,o={}){if(path=="/api/send"&&o.body){try{const b=JSON.parse(o.body);if(!b.channel){b.channel=(CO&&CO.chan)||"email";if(!b.phone){const c=Object.values((S&&S.contacts)||{}).find(x=>x&&x.email&&x.email==b.to);b.phone=(c&&c.phone)||""}o.body=JSON.stringify(b)}}catch(x){}}return _api16(path,o)};
 let SVC=null,svcMsg="",svcLoading=false;
