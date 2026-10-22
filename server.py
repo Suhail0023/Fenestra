@@ -296,7 +296,7 @@ class H(BaseHTTPRequestHandler):
             elif path == "/api/projects": s.out(200, json.dumps(list_projects()))
             elif path == "/api/company": s.out(200, json.dumps(company()))
             elif path == "/api/status":
-                s.out(200, json.dumps({"email": bool(os.environ.get("SMTP_HOST")), "whatsapp": wa_provider(), "ai": bool(os.environ.get("ANTHROPIC_API_KEY")), "chan": company().get("chan") or "email", "backups": len(glob.glob(os.path.join(BASE, "backups", "*.zip"))), "demo": os.environ.get("SEED_DEMO_USERS", "1") != "0"}))
+                s.out(200, json.dumps({"email": bool(os.environ.get("SMTP_HOST")), "whatsapp": wa_provider(), "ai": bool(os.environ.get("ANTHROPIC_API_KEY")), "chan": company().get("chan") or "email", "backups": len(glob.glob(os.path.join(BASE, "backups", "*.zip"))), "demo": os.environ.get("SEED_DEMO_USERS", "1") != "0", "persistent": is_persistent()}))
             elif path == "/api/backup":
                 if u["role"] != "Management": s.out(403, '{"error":"management only"}'); return
                 audit("backup download", u["u"], s.ip()); s.out(200, make_backup(s.q().get("photos") == ["1"]), "application/zip")
@@ -495,6 +495,11 @@ class H(BaseHTTPRequestHandler):
         s.out(404, "{}")
     def log_message(s, *a): pass
 
+def is_persistent():
+    """False when DATA_DIR is on the container's own disk (data is lost on every redeploy/restart)."""
+    if not os.environ.get("DATA_DIR"): return True
+    try: return os.stat(BASE).st_dev != os.stat("/").st_dev or os.environ.get("ASSUME_PERSISTENT") == "1"
+    except OSError: return True
 def make_backup(photos=False):
     import io, zipfile
     b = io.BytesIO()
@@ -534,6 +539,7 @@ if __name__ == "__main__":
     print(f"Open http://localhost:{port}" + ("   LAN: http://<this-laptop-ip>:%d" % port if "--lan" in sys.argv else ""))
     if os.environ.get("SEED_DEMO_USERS", "1") != "0": print("First logins: user names management, pm, planner, siteeng, qe, hse, contractor, production. Password azal2026 (you must change it at first login).")
     print("Email:", "on" if os.environ.get("SMTP_HOST") else "off", "| WhatsApp:", wa_provider() or "off", "| AI guide:", "on" if os.environ.get("ANTHROPIC_API_KEY") else "off")
+    if not is_persistent(): print("WARNING: %s is not a mounted volume. Users and project data will be LOST on every redeploy or restart. Attach a persistent volume at %s (set ASSUME_PERSISTENT=1 if it is persistent but not detected)." % (BASE, BASE))
     threading.Thread(target=saturday_loop, daemon=True).start()
     ThreadingHTTPServer.daemon_threads = True
     ThreadingHTTPServer(("0.0.0.0" if ("--lan" in sys.argv or os.environ.get("PORT")) else "127.0.0.1", port), H).serve_forever()
