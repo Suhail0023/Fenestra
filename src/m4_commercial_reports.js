@@ -25,7 +25,7 @@ return`<div class="g"><div class="c"><div class="m">Contract value</div><div cla
 <div class="c w"><h3>Monthly progress invoice</h3><div class="f"><label>Month<br><input type="month" value="${invM}" onchange="invM=this.value;R()"></label><button onclick="invXlsx()">Download Excel</button><span class="m">Basis: ${S.fin.basis=="wir"?"WIR-approved quantity":"installed quantity"}</span></div><table><tr><th>BOQ line<th>Contract qty<th>Rate<th>Previous<th>This period<th>Cumulative<th>%<th>Amount</tr>${I.rows.map(x=>`<tr><td>${e(x.name)}<td>${x.q} ${e(x.uom)}<td>${x.rt}<td>${x.prev}<td>${x.cur}<td>${x.cum}<td>${r1(x.pct)}%<td>${money(x.amt)}</tr>`).join("")}<tr><th colspan=7>Gross<th>${money(I.gross)}</tr><tr><td colspan=7>Retention ${S.fin.ret}%<td>-${money(I.ret)}</tr><tr><th colspan=7>Net payable<th>${money(I.net)}</tr></table></div>`};
 /* ---- productivity insights ---- */
 function insights(){const stat=(fn)=>{const L=S.logs.filter(fn);const q=L.reduce((a,l)=>a+l.q,0),mh=L.reduce((a,l)=>a+l.w*l.h,0);return{n:L.length,q,mh,v:q?mh/q:0}};
-const rows=S.rates.map((r,i)=>{const s=stat(l=>{const t=g(l.t);return t&&rowFor(t).k==r.k}),std=r.z*10/r.q,dev=s.v&&std?(s.v-std)/std*100:0;return{r,i,s,std,dev,sug:s.v?r1(r.z*10/s.v*10)/10:0}});
+const rows=S.rates.map((r,i)=>{const s=stat(l=>{const t=g(l.t);return t&&rowFor(t).k==r.k}),std=r.z*10/r.q,dev=s.v&&std?(s.v-std)/std*100:0;return{r,i,s,std,dev,sug:s.v?r1(r.z*10/s.v):0}});
 const teams=[...new Set(S.logs.map(l=>l.team))].map(t=>({t,...stat(l=>l.team==t)})),lv={};S.logs.forEach(l=>{const k=levelOf(g(l.t));(lv[k]=lv[k]||[]).push(l)});
 const lvl=Object.entries(lv).map(([k,a])=>{const q=a.reduce((x,l)=>x+l.q,0),mh=a.reduce((x,l)=>x+l.w*l.h,0);return{k,q,v:q?mh/q:0}});
 return{rows,teams,lvl}}
