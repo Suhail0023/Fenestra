@@ -40,7 +40,7 @@ TABLES = {
  "Variations": ("vars", ["id","no","d","desc","bid","dq","val","s","note","wir"]),
  "Costs": ("costs", ["id","d","bid","type","amt","note"]),
  "Drawings": ("draws", ["id","name","url"])}
-CONFIG_KEYS = ["proj", "base", "baseH", "xl", "wirTpl", "contacts", "fin", "diary", "pp", "pts", "awd", "lean", "fid", "sp", "dp", "mh", "vo", "ipa", "ipas", "mt", "tl", "sir", "wp", "cfg", "sigs", "roll", "fca"]
+CONFIG_KEYS = ["proj", "base", "baseH", "xl", "wirTpl", "contacts", "fin", "diary", "pp", "pts", "awd", "lean", "fid", "sp", "dp", "mh", "vo", "ipa", "ipas", "mt", "tl", "sir", "wp", "cfg", "sigs", "roll", "fca", "la"]
 INTS = ("id","p","seq","dur","i","t","tid","dw","rid","bid")
 LISTF = {"insp": ("c", "cr", "ph"), "obs": ("ph",), "snags": ("ph",), "inc": ("ph",), "reqs": ("items",)}
 README = [["Fenestra Site project database (Excel backend)"], [""],
