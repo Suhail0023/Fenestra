@@ -8,8 +8,8 @@ const lastDay=m=>{const [y,mo]=m.split("-");return new Date(Date.UTC(+y,+mo,0)).
 const mday=(m,d)=>m+"-"+String(Math.min(Math.max(1,+d||1),lastDay(m))).padStart(2,"0");
 async function sendMail14(to,subject,body){if(!API||!to)return false;try{const x=await api("/api/send",{method:"POST",body:JSON.stringify({to,subject,body})});return x.ok}catch(q){return false}}
 const cEmail=k=>((S.contacts||{})[k]||{}).email||"",cName=(k,d)=>((S.contacts||{})[k]||{}).name||d;
-const head14=(ref,to,subj)=>{const c=CO||{};return[c.name||"[Company name]",[c.address,c.phone,c.email].filter(Boolean).join(" | "),"","Date: "+fd(T)+" "+T.slice(0,4),"Our ref: "+ref,"To: "+to,"","SUBJECT: "+(S.proj.name||PC)+" ("+PC+") - "+subj,"","Dear Sirs,",""]};
-const sign14=()=>["","Yours faithfully,","",who14(),role,(CO&&CO.name)||""];
+let head14=(ref,to,subj)=>{const c=CO||{};return[c.name||"[Company name]",[c.address,c.phone,c.email].filter(Boolean).join(" | "),"","Date: "+fd(T)+" "+T.slice(0,4),"Our ref: "+ref,"To: "+to,"","SUBJECT: "+(S.proj.name||PC)+" ("+PC+") - "+subj,"","Dear Sirs,",""]};
+let sign14=()=>["","Yours faithfully,","",who14(),role,(CO&&CO.name)||""];
 
 /* ===== 1-4 manhours ===== */
 const mhPlanL=l=>l.qty>0&&l.dur?brief(l).mh:0,mhPlan=()=>leaves().reduce((a,l)=>a+mhPlanL(l),0),mhAct=()=>S.logs.reduce((a,l)=>a+(+l.w||0)*(+l.h||0),0),mhEarned=()=>leaves().reduce((a,l)=>a+mhPlanL(l)*Math.min(100,l.done||0)/100,0),mhDue=()=>leaves().reduce((a,l)=>a+mhPlanL(l)*planPct(l),0);

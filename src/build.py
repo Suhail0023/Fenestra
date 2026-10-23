@@ -48,7 +48,7 @@ rep('document.getElementById("v").innerHTML=V[view]();save()}','document.getElem
 # --- final boot
 rep('\nR();permPopup();\n</script>','\nboot();\nif("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});\n</script>')
 # --- modules
-mods="".join(open(f,encoding="utf-8").read()+"\n" for f in ["m1_core.js","m2_quality_safety.js","m3_requests_claims_plan.js","m4_commercial_reports.js","m5_i18n.js","m6_setup.js","m7_lang_new.js","m8_tree.js","m9_photos_awards.js","m10_lean.js","m11_delay_fidic.js","m12_help.js","m13_scope.js","m14_mh_vo_ipa.js","m15_mat_tools.js","m16_services.js","m17_wir_daily.js","m18_manual.js","m19_records.js","m20_rollover.js","m21_lookahead.js"])
+mods="".join(open(f,encoding="utf-8").read()+"\n" for f in ["m1_core.js","m2_quality_safety.js","m3_requests_claims_plan.js","m4_commercial_reports.js","m5_i18n.js","m6_setup.js","m7_lang_new.js","m8_tree.js","m9_photos_awards.js","m10_lean.js","m11_delay_fidic.js","m12_help.js","m13_scope.js","m14_mh_vo_ipa.js","m15_mat_tools.js","m16_services.js","m17_wir_daily.js","m18_manual.js","m19_records.js","m20_rollover.js","m21_lookahead.js","m22_time.js","m23_contract_safety.js","m24_rewards_charts.js"])
 rep('\nfunction R(){if(!canTab','\n'+mods+'\nfunction R(){if(!canTab')
 rep('const upd=(id,k,v)=>{g(id)[k]=v;R()}','const upd=(id,k,v)=>{leanUpd(id,k,v)}')
 rep('function re(){if(!isPL())return;','function re(){if(!isPL())return;if(!lnGate())return;')
