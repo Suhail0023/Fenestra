@@ -1,0 +1,18 @@
+THIRD-PARTY COMPONENTS
+
+Fenestra Site uses the following open-source components. They remain the property of their authors and are used under their own licences. Check each licence text when you distribute the Software.
+
+Browser (loaded from a public CDN)
+  qrcode-generator 1.0.3  - MIT licence   - Kazuhiko Arase
+  jsQR 1.1.1              - Apache 2.0    - Cosmo Wolfe
+  SheetJS (xlsx) 0.18.5   - Apache 2.0    - SheetJS LLC
+
+Server (installed with pip)
+  openpyxl                - MIT licence
+  pypdf                   - BSD 3-Clause licence
+  reportlab               - BSD licence
+
+Runtime
+  Python (PSF licence), SQLite (public domain).
+
+Weather forecasts use the Open-Meteo service under its terms of use (free for non-commercial use; a commercial plan is needed for commercial use, check before going live).

@@ -1,0 +1,20 @@
+# Release image: contains NO readable source. Python is compiled to bytecode and the browser code is minified and sent only after login.
+# Build with the readable source folder as the build context (keep that folder private):  python3 tools/build_protected.py  then  fly deploy -c fly.release.toml
+FROM python:3.12-slim AS build
+WORKDIR /src
+COPY server.py docs.py watch.py lib.py xer_detail.py /src/
+RUN python -m compileall -b -q /src && rm -f /src/*.py
+
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 DATA_DIR=/data PORT=8080 TRUST_PROXY=1 SEED_DEMO_USERS=0 TZ=Asia/Dubai PYTHONDONTWRITEBYTECODE=1
+WORKDIR /app
+RUN pip install --no-cache-dir openpyxl pypdf reportlab && useradd -m -u 10001 app && mkdir -p /data && chown app /data
+COPY --from=build /src/*.pyc /app/
+COPY dist /app/dist
+COPY shell.html sw.js manifest.webmanifest icon-192.png icon-512.png seed_state.json Fenestra_User_Manual.pdf LICENSE.txt COPYRIGHT.txt THIRD_PARTY_NOTICES.txt /app/
+COPY legal/release_history.json /app/legal/release_history.json
+COPY site /app/site
+USER app
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/healthz')" || exit 1
+CMD ["python", "server.pyc"]

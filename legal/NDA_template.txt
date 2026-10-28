@@ -1,0 +1,37 @@
+NON-DISCLOSURE AGREEMENT (ONE-WAY TEMPLATE) - FENESTRA SITE
+(Also available as an editable document. Have a lawyer in your jurisdiction review it. Fill every [bracketed] item. Not legal advice.)
+
+This Non-Disclosure Agreement (the "Agreement") is made on [date] between Charles Couteau, [address], [email] (the "Discloser"), and [recipient name], [registration number], [address] (the "Recipient").
+
+1. Purpose. The Discloser will show the Recipient Fenestra Site, its demonstrations, documentation and related information so that the Recipient can [evaluate a possible licence / pilot / partnership / investment] (the "Purpose").
+
+2. Confidential Information. Everything the Discloser shares, in any form and whether or not marked confidential, that relates to Fenestra Site, including: source and object code; algorithms, calculations, formulas and scoring rules; database structure; screens, workflows and design; demonstration logins, screenshots, videos and the user manual; test and sample data; pricing, plans, roadmap and customer names; and any notes or copies the Recipient makes of these. The existence and terms of this Agreement are also confidential.
+
+3. What is not Confidential Information. Information that the Recipient can show (a) is or becomes public without the Recipient's breach; (b) was lawfully known to the Recipient before disclosure and without a duty of confidence; (c) was lawfully received from a third party free to share it; or (d) was developed independently without using the Confidential Information.
+
+4. Recipient's duties. The Recipient shall:
+  (1) use the Confidential Information only for the Purpose;
+  (2) keep it secret and protect it with at least the care it uses for its own confidential information, and never less than reasonable care;
+  (3) share it only with its employees and advisers who need it for the Purpose and who are bound by duties at least as strict as these, and stay responsible for their compliance;
+  (4) not copy, record, screen-capture, scrape, photograph or download any of it, except what the Purpose needs and the Discloser has approved in writing;
+  (5) not reverse engineer, decompile, deobfuscate or analyse the software, or try to extract its code, structure or algorithms, and not use it to build, train or improve any product or model;
+  (6) not share logins or demonstration links, and tell the Discloser at once if it learns of any unauthorised use or disclosure.
+
+5. Legally required disclosure. If the law or a court orders disclosure, the Recipient shall (where lawful) tell the Discloser first, disclose only what is required, and help the Discloser seek protection.
+
+6. No licence or transfer. All rights in the Confidential Information and in Fenestra Site, including copyright, trade secrets and the name "Fenestra Site", stay with the Discloser. Nothing here grants a licence, an option or a duty to enter any other agreement. Feedback the Recipient gives may be used by the Discloser freely.
+
+7. Return or destruction. Within 7 days of a request, or when the Purpose ends, the Recipient shall return or permanently delete all Confidential Information and copies (including from backups, where practicable), end all access, and confirm this in writing.
+
+8. Term. The duties in this Agreement apply to information disclosed during [2] years from the date above and continue for [5] years after the last disclosure. For source code and trade secrets they continue for as long as the information remains a trade secret.
+
+9. Remedies. Misuse could cause harm that money cannot repair, so the Discloser may seek an injunction or other urgent relief without proving actual loss, in addition to damages and other remedies. The Recipient shall pay the Discloser's reasonable legal costs if a court finds that it breached this Agreement.
+
+10. No warranty. Confidential Information is provided "as is", without warranty of accuracy or fitness.
+
+11. General. This Agreement is the whole agreement on its subject and may be changed only in writing signed by both parties. Neither party may assign it without the other's written consent. If a clause is unenforceable, the rest continues. Delay in enforcing a right is not a waiver. Notices go to the addresses above.
+
+12. Governing law and disputes. This Agreement is governed by the laws of [UAE / emirate / DIFC / ADGM - confirm with your lawyer]. The courts of [city / DIFC / ADGM] have exclusive jurisdiction [or: disputes are finally resolved by arbitration under the rules of [institution], seat [city], in English].
+
+Signed for the Discloser: ____________________  Name: Charles Couteau  Date: __________
+Signed for the Recipient: ____________________  Name: __________  Title: __________  Date: __________

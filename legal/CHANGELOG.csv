@@ -1,0 +1,62 @@
+﻿Date,Time,Version,Title,Change
+2026-10-20,12:50,v0 (original),Original application received as AZAL_local.zip,"Single-file web app (index.html) with a small Python server, installable on phones"
+2026-10-20,12:50,v0 (original),Original application received as AZAL_local.zip,Project data kept in one Excel workbook per project
+2026-10-20,12:50,v0 (original),Original application received as AZAL_local.zip,"Planning, delegation, QR time sheets, WIR and MIR, IPA, delay claims, Lean planner, P6 exchange, English plus seven languages"
+2026-10-23,12:27,User manual 1,First user manual (20 pages),Chapters 1 to 10 following the project workflow and appendices A to E
+2026-10-25,07:02,v11 (SQLite),Permanent storage moved from Excel to SQLite,"All project data stored in a single SQLite database (fenestra.db), WAL mode"
+2026-10-25,07:02,v11 (SQLite),Permanent storage moved from Excel to SQLite,Backups hold a consistent database snapshot and a plain SQL dump (fenestra.sql)
+2026-10-25,07:02,v11 (SQLite),Permanent storage moved from Excel to SQLite,Old Excel workbooks are imported once at the first start
+2026-10-25,07:19,v12 (documents),"Document register, numbering and formats","Serial numbering and log of WIR, MIR, IPA, delay letters, EOT, variations, delivery notes, warnings and other letters, each with a stored copy"
+2026-10-25,07:19,v12 (documents),"Document register, numbering and formats","Downloadable register as Excel, PDF, CSV or ZIP of all copies; individual items downloadable"
+2026-10-25,07:19,v12 (documents),"Document register, numbering and formats","Custom numbering patterns, reset rules and start numbers in Setup"
+2026-10-25,07:19,v12 (documents),"Document register, numbering and formats","Upload Word, Excel or PDF formats per document type; letters and forms are generated from them"
+2026-10-25,07:19,v12 (documents),"Document register, numbering and formats",Role restrictions tested end to end
+2026-10-25,08:13,v13,"Off-times, forecast, SOR, delegation alarms and scan locations","Rest, lunch and prayer off-times reduce productive hours; used by crews, durations, Gantt and time sheets"
+2026-10-25,08:13,v13,"Off-times, forecast, SOR, delegation alarms and scan locations",Manhour and resource forecast on the dashboard; operational budget is the lower of estimate and forecast; alert to Management and the estimation manager
+2026-10-25,08:13,v13,"Off-times, forecast, SOR, delegation alarms and scan locations",Site observation report raised automatically for a rejected MIR; production and project managers notified; logged in the register
+2026-10-25,08:13,v13,"Off-times, forecast, SOR, delegation alarms and scan locations","Server-side delegation alarms (24 hours), daily project manager reminders and daily unassigned-task notices (watch.py)"
+2026-10-25,08:13,v13,"Off-times, forecast, SOR, delegation alarms and scan locations",QR scans record the device location; project manager alerted when away from site
+2026-10-25,08:13,v13,"Off-times, forecast, SOR, delegation alarms and scan locations","Delay letters, EOT letters and instructions limited to Management and the project manager"
+2026-10-25,08:13,v13,"Off-times, forecast, SOR, delegation alarms and scan locations","Fixes: duplicate function name clash (forecast card), delegation settings key, push/poll data race"
+2026-10-25,09:32,v14,"Monthly KPIs, ranking and certificates of recognition","KPI scorecards for project manager, site engineers, QA/QC engineers and team leaders with targets and weights"
+2026-10-25,09:32,v14,"Monthly KPIs, ranking and certificates of recognition","Monthly ranking, six-month trend, Management review, official approval with locked snapshot"
+2026-10-25,09:32,v14,"Monthly KPIs, ranking and certificates of recognition","Numbered certificates of recognition (approve or withhold with reason), printable and filed in the register"
+2026-10-25,09:49,v15,Installation module and module tabs,Existing application becomes the Installation module
+2026-10-25,09:49,v15,Installation module and module tabs,"Header tabs: Installation (active), Logistics, Production, Materials, Engineering (greyed out)"
+2026-10-25,09:53,v16,Footer tabs for common items,"Common tabs moved to a footer bar: Dashboard, Portfolio, Reports, Documents, Chat, Alerts, Activity log, Setup"
+2026-10-25,10:41,v17,Eight new common tabs,"Inbox, Tasks and actions, Calendar (.ics export), Contacts, Library, Audit trail, Users and access, Help and training"
+2026-10-25,10:41,v17,Eight new common tabs,Library and audit lists refresh on opening
+2026-10-25,11:01,v18,User manual rewritten,"34-page manual covering all features to v17, built into the app"
+2026-10-25,11:25,v19,Administrator login and landing page,Permanent administrator account Couteau (password stored only as a salted hash)
+2026-10-25,11:25,v19,Administrator login and landing page,"Public landing page at /welcome with features, benefits, screenshots, three demonstration videos, log in and sign up"
+2026-10-25,11:25,v19,Administrator login and landing page,KPI index values rounded for display
+2026-10-25,13:02,v20,Protection release,Application code is sent only after login (login shell page); no code is served to visitors
+2026-10-25,13:02,v20,Protection release,Role-gated KPI and certificate module is not sent to the Main contractor
+2026-10-25,13:02,v20,Protection release,Browser code minified; Python compiled to bytecode in the release image; no readable source in the image
+2026-10-25,13:02,v20,Protection release,User manual served only to signed-in users
+2026-10-25,13:02,v20,Protection release,Per-company hosted deployment scripts for Fly.io
+2026-10-25,13:02,v20,Protection release,"Copyright notice, proprietary licence, third-party notices, NDA template"
+2026-10-25,13:02,v20,Protection release,"Dated release history and file hash manifest, downloadable in the app"
+2026-10-25,19:16,v21,New-project onboarding,"Setup page opens with a 5-step onboarding panel: contract, BOQ and prices, baseline schedule, setup data and forms, review and save"
+2026-10-25,19:16,v21,New-project onboarding,Contract upload reads the text and fills the contract number and start and end dates when found; original file stored in the Library (Contracts)
+2026-10-25,19:16,v21,New-project onboarding,BOQ upload accepts a price column; prices are removed by the server for every role below Project manager and cannot be altered by those roles
+2026-10-25,19:16,v21,New-project onboarding,Project manager or Management may import the P6 baseline and freeze it while no baseline exists
+2026-10-25,19:16,v21,New-project onboarding,Save button stores partial setup; missing items are listed and a reminder shows on the PM dashboard until complete
+2026-10-28,09:24,v22,"Delete project, loaded program and BOQ","Setup > Delete data card (and buttons on the BOQ, Schedule, P6 exchange and Portfolio pages) to delete the BOQ, the loaded program or a whole project"
+2026-10-28,09:24,v22,"Delete project, loaded program and BOQ","Delete BOQ (Project manager, Management): removes all BOQ items and prices with the schedule, baseline and detailed program built on them; linked site records can be deleted too or kept as history"
+2026-10-28,09:24,v22,"Delete project, loaded program and BOQ","Delete loaded program (Project manager, Management, Planning engineer): clears activity start dates, the scope-level P6 program and the detailed program; the frozen baseline can also be deleted by the Planning engineer or Management"
+2026-10-28,09:24,v22,"Delete project, loaded program and BOQ","Delete project (Project manager, Management): removes every record of the project from the database; blocked for the last project and for projects with sub-projects; the server saves a full database backup first"
+2026-10-28,09:24,v22,"Delete project, loaded program and BOQ","Every delete asks to type DELETE or the project code, offers a JSON backup download, and is written to the activity log and the server audit"
+2026-10-28,09:24,v22,"Delete project, loaded program and BOQ","A deleted project is not re-created by the demo seed, a legacy Excel file or a late save from another device; other users on it are moved to another project"
+2026-10-28,13:17,v23,Excel program to P6 converter,"Planning > Excel to P6: upload a programme from Excel (.xlsx, .xls, .csv) or an MS Project export and download a Primavera P6 file (.xer)"
+2026-10-28,13:17,v23,Excel program to P6 converter,"Columns are detected automatically and can be changed: activity ID, name, WBS (up to 3 levels, a path, or MS Project outline levels), start, finish, duration, % complete, predecessors, activity type, actual dates"
+2026-10-28,13:17,v23,Excel program to P6 converter,"Rows with a name but no dates are read as WBS headings; missing dates are worked out from the predecessors (FS, SS, FF, SF with lags in days, weeks or hours)"
+2026-10-28,13:17,v23,Excel program to P6 converter,"Choice of calendar (company Mon-Sat with holidays, Mon-Sat, Sun-Thu, Sat-Thu, Mon-Fri, 7 days), hours per day, data date and project ID; milestones, progress and actual dates are carried into P6"
+2026-10-28,13:17,v23,Excel program to P6 converter,"Preview with warnings (unknown predecessors, bad dates, missing durations) before converting; Excel template download"
+2026-10-28,13:17,v23,Excel program to P6 converter,"Available to the planning engineer, project manager and Management (server checks the role)"
+2026-10-28,13:53,v24,Auto-schedule the whole BOQ scope by scope,Schedule page (and Setup onboarding step 3): enter one start and one finish date for the whole BOQ and press Preview schedule
+2026-10-28,13:53,v24,Auto-schedule the whole BOQ scope by scope,"Each scope (top BOQ line) is scheduled zone by zone (building and level, in the Lean zone order) at a common pace so the last item finishes by the finish date"
+2026-10-28,13:53,v24,Auto-schedule the whole BOQ scope by scope,"Follow-on scopes (glass, shutters, sheets) are paired automatically with their frame, bracket, outer, channel or runner scope and start a set number of days after it in the same zone"
+2026-10-28,13:53,v24,Auto-schedule the whole BOQ scope by scope,"Options: first-fix scopes in parallel or one after another, follow-on lag, never slower than standard productivity, keep items already started or delegated"
+2026-10-28,13:53,v24,Auto-schedule the whole BOQ scope by scope,"Preview shows each scope's start, finish and window and the crew effort against standard productivity before anything changes"
+2026-10-28,13:53,v24,Auto-schedule the whole BOQ scope by scope,Apply keeps the standard durations so the schedule can be redone or reset; Undo puts back the previous dates; the change is logged

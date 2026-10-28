@@ -11,3 +11,13 @@ fly.toml
 start.bat
 backup.sh
 AZAL_LR001_Project_DB.xlsx
+fenestra.db
+fenestra.db-wal
+fenestra.db-shm
+*.sql
+dist/
+src/
+.github/
+.git/
+backups/
+photos/

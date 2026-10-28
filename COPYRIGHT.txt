@@ -1,0 +1,12 @@
+COPYRIGHT NOTICE
+
+Fenestra Site
+Copyright (c) 2026 Charles Couteau. All rights reserved.
+
+This software, its source code, user interface, workflows, calculations, documentation, user manual, screenshots, demonstration videos and the name "Fenestra Site" are the property of the copyright holder and are protected by copyright law and international treaties. Unauthorised copying, modification, distribution, reverse engineering or hosting for others is prohibited and may lead to civil and criminal liability. Use is permitted only under a written licence agreement (see LICENSE.txt).
+
+"Fenestra Site" is claimed as a trademark. Registration of the mark is recommended (see legal/PROTECTION_CHECKLIST.txt).
+
+To report misuse: [email address].
+
+Where the copyright holder is a company rather than an individual, or the software was written under an employment or service contract, confirm ownership with a lawyer and change the holder named here, in LICENSE.txt, in the COPYRIGHT_HOLDER server setting, and in the file headers.
