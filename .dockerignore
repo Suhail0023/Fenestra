@@ -6,6 +6,7 @@ company.json
 audit.log
 __pycache__
 deploy.ps1
+NORTHFLANK.md
 deploy_secrets.sh
 fly.toml
 start.bat
