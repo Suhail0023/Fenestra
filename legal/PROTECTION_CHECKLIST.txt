@@ -1,0 +1,30 @@
+PROTECTING FENESTRA SITE - CHECKLIST
+(Not legal advice. Ask a lawyer in your jurisdiction to review.)
+
+TECHNICAL (done in this release)
+[x] Application code is sent only after login (login shell page for visitors).
+[x] KPI and certificate module is not sent to the Main contractor role.
+[x] Browser code minified; Python compiled to bytecode in the release image; no readable source in the image.
+[x] User manual is served only to signed-in users.
+[x] Per-company hosting scripts: customers get a web address and logins, never the files.
+[ ] Keep the readable source folder only in a PRIVATE repository (GitHub private, or your own Git server). Turn on two-factor sign-in and limit who can read it.
+[ ] Do not email or share AZAL_local_v*.zip with anyone outside your control. Send demo links or screen recordings instead.
+[ ] Use a separate demo installation with fake data for prospects.
+[ ] Rotate passwords of the Couteau and management accounts and keep them in a password manager.
+
+LEGAL
+[ ] Confirm who owns the copyright (you personally, a company, or an employer), and update COPYRIGHT.txt / LICENSE.txt / COPYRIGHT_HOLDER if needed.
+[ ] Customers sign LICENSE.txt (or your adapted version) before getting logins.
+[ ] Anyone who sees demos, pilots or the code signs the NDA (legal/NDA_template.txt) first. Contractors and developers sign an IP assignment agreement.
+[ ] Register the name "Fenestra Site" and the logo as a trademark in the countries that matter (for the UAE, ask the Ministry of Economy about trademark registration).
+[ ] Check whether copyright registration or deposit is available in your country (in the UAE, ask the Ministry of Economy) and keep the dated records below.
+
+EVIDENCE OF AUTHORSHIP
+[x] Dated release history: legal/CHANGELOG.md and legal/CHANGELOG.csv (also downloadable in the app under Help).
+[x] SHA-256 manifest of every source file for each release: legal/MANIFEST_<version>.json.
+[ ] Store each release's zip and manifest somewhere you cannot lose or alter (private Git with signed tags, plus an offline copy). To get independent proof of date, email the manifest to yourself and to a lawyer, or timestamp it with a free service such as OpenTimestamps.
+[ ] Re-run `python3 tools/make_history.py` at every release.
+
+OPERATIONAL
+[ ] Watch the Audit tab for unusual downloads; limit Management accounts.
+[ ] Ask a lawyer about a takedown plan if a copy appears (host abuse report, DMCA-style notice, cease-and-desist).

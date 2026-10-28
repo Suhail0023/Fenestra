@@ -1,9 +1,18 @@
+# secrets and live data: never commit
 .env
 users.json
 company.json
 audit.log
+fenestra.db
+fenestra.db-wal
+fenestra.db-shm
+*.sql
 backups/
+photos/
+data/
 *.xlsx
+# generated
+dist/
 *.bak
-__pycache__/
 *.log
+__pycache__/

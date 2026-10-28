@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Fenestra Site local server. The Excel workbook per project is the database.
+# Fenestra Site - Copyright (c) 2026 Charles Couteau. All rights reserved.
+# Proprietary and confidential. Unauthorised copying, modification, distribution or reverse engineering is prohibited. See LICENSE.txt.
+"""Fenestra Site local server. One SQLite file (fenestra.db in the data folder) is the database for all projects.
    python server.py            -> http://localhost:8000   (this laptop only)
    python server.py --lan      -> also reachable from phones on the same Wi-Fi
 Logins: users.json (passwords stored as salted PBKDF2 hashes). Managed in the app (Users tab, Management role).
 Email (optional): SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM.
 WhatsApp (optional): WA_TOKEN + WA_PHONE_ID (Meta Cloud API) or TWILIO_SID + TWILIO_TOKEN + TWILIO_WA_FROM.
 Deployment: DATA_DIR, PORT, TRUST_PROXY=1, SEED_DEMO_USERS=0, INIT_ADMIN_PASSWORD."""
-import datetime as dt, glob, hashlib, json, os, re, secrets, shutil, smtplib, sys, threading, time, base64, uuid
+import datetime as dt, glob, hashlib, json, os, re, secrets, shutil, smtplib, sqlite3, sys, threading, time, base64, uuid
 from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font
+import docs, watch, lib
 
 APP = os.path.dirname(os.path.abspath(__file__)); BASE = os.environ.get("DATA_DIR") or APP; os.makedirs(BASE, exist_ok=True); LOCK = threading.Lock()
 USERS_FILE = os.path.join(BASE, "users.json"); COMPANY_FILE = os.path.join(BASE, "company.json"); PROJ_FILE = os.path.join(BASE, "projects.json"); TREE_FILE = os.path.join(BASE, "ptree.json")
@@ -28,7 +29,7 @@ TABLES = {
  "Obstructions": ("obs", ["d","t","ty","h","n","ph"]),
  "Outbox": ("mail", ["to","n","miss","from","ps","pf","delay","body"]),
  "Employees": ("emps", ["id","name","role","team","site"]),
- "Attendance": ("att", ["d","t","id","name","in","out"]),
+ "Attendance": ("att", ["d","t","id","name","in","out","g"]),
  "Activity_Log": ("ev", ["d","tm","id","n","ev","by","note","u"]),
  "Chat_Log": ("chat", ["id","d","tm","proj","by","text"]),
  "Snags": ("snags", ["id","no","tid","loc","desc","owner","due","s","d","dc","dr","dw","px","py","ph","by","note"]),
@@ -40,114 +41,241 @@ TABLES = {
  "Variations": ("vars", ["id","no","d","desc","bid","dq","val","s","note","wir"]),
  "Costs": ("costs", ["id","d","bid","type","amt","note"]),
  "Drawings": ("draws", ["id","name","url"])}
-CONFIG_KEYS = ["proj", "base", "baseH", "xl", "wirTpl", "contacts", "fin", "diary", "pp", "pts", "awd", "lean", "fid", "sp", "dp", "mh", "vo", "ipa", "ipas", "mt", "tl", "sir", "wp", "cfg", "sigs", "roll", "fca", "la", "wh", "warn", "hrStart", "tc", "dg", "lgt", "rw", "rwStart"]
+CONFIG_KEYS = ["proj", "base", "baseH", "xl", "wirTpl", "contacts", "fin", "diary", "pp", "pts", "awd", "lean", "fid", "sp", "dp", "mh", "vo", "ipa", "ipas", "mt", "tl", "sir", "wp", "cfg", "sigs", "roll", "fca", "la", "wh", "warn", "hrStart", "tc", "dg", "lgt", "rw", "rwStart", "dlg", "geo", "kpi", "kpir", "kpic", "onb", "asch"]
 INTS = ("id","p","seq","dur","i","t","tid","dw","rid","bid")
 LISTF = {"insp": ("c", "cr", "ph"), "obs": ("ph",), "snags": ("ph",), "inc": ("ph",), "reqs": ("items",)}
-README = [["Fenestra Site project database (Excel backend)"], [""],
- ["Items: one row per BOQ item. p = parent id (0 = top level). Rows with dur (days) and start (yyyy-mm-dd) are schedulable activities."],
- ["  qty = total quantity, cr = contract rate per unit, bc = estimate cost per unit, done = % complete, st = plan/res/deleg/acc/comp."],
- ["Other sheets are written by the app: WIR (Inspections), Snags, Permits, Toolbox_Talks, Incidents, Requests, Delays, Variations, Costs, Daily_Logs, Obstructions, Chat_Log, Activity_Log."],
- ["Config: one row per setting (stored as JSON text). Edit in the app rather than here."],
- ["Logins are in users.json (not in this workbook). Manage them in the app: Users tab, Management role."],
- ["Close this file in Excel before using the app (Excel locks it). Edit, save, close, then refresh the browser."]]
-
-def clean(k, v):
-    if isinstance(v, dt.datetime): return v.strftime("%Y-%m-%d")
-    if isinstance(v, dt.date): return v.strftime("%Y-%m-%d")
-    if isinstance(v, dt.time): return v.strftime("%H:%M")
-    if isinstance(v, float) and v == int(v) and k in INTS: return int(v)
-    return v.strip() if isinstance(v, str) else v
-def cell(c, v):
-    if c == "ea": return ";".join("1" if i else "0" for i in v)
-    if c == "miss": return " | ".join(v)
-    return "; ".join(str(i) for i in v)
-def rows(ws): return [r for r in ws.iter_rows(min_row=2, values_only=True) if any(x not in (None, "") for x in r)]
+DB_FILE = os.path.join(BASE, "fenestra.db")
 
 def code_of(p):
     c = re.sub(r"[^A-Za-z0-9_-]", "", p or "") or "LR001"
     return c[:24]
-def dbp(p): return os.path.join(BASE, "AZAL_%s_Project_DB.xlsx" % code_of(p))
 def load_json(fp, default):
     try: return json.load(open(fp, encoding="utf-8"))
     except Exception: return default
 def save_json(fp, obj):
     tmp = fp + ".tmp"; json.dump(obj, open(tmp, "w", encoding="utf-8"), indent=1); os.replace(tmp, fp)
 
+# ---------------- SQLite storage ----------------
+def q_(name): return '"%s"' % name.replace('"', '""')
+def connect():
+    c = sqlite3.connect(DB_FILE, timeout=30)
+    c.execute("PRAGMA journal_mode=WAL"); c.execute("PRAGMA synchronous=FULL")
+    return c
+def init_db():
+    c = connect()
+    with c:
+        c.execute("CREATE TABLE IF NOT EXISTS projects (code TEXT PRIMARY KEY, name TEXT, parent TEXT DEFAULT '', kind TEXT DEFAULT 'Project')")
+        c.execute("CREATE TABLE IF NOT EXISTS settings (project TEXT NOT NULL, key TEXT NOT NULL, value, PRIMARY KEY (project, key))")
+        c.execute("CREATE TABLE IF NOT EXISTS config (project TEXT NOT NULL, key TEXT NOT NULL, value TEXT, PRIMARY KEY (project, key))")
+        c.execute("CREATE TABLE IF NOT EXISTS checklist (project TEXT NOT NULL, task_id TEXT NOT NULL, done TEXT, PRIMARY KEY (project, task_id))")
+        c.execute("CREATE TABLE IF NOT EXISTS flags_ack (project TEXT NOT NULL, flag_key TEXT NOT NULL, done INTEGER, PRIMARY KEY (project, flag_key))")
+        c.execute("CREATE TABLE IF NOT EXISTS todo (id INTEGER PRIMARY KEY, project TEXT NOT NULL, text TEXT)")
+        c.execute("CREATE INDEX IF NOT EXISTS ix_todo_project ON todo(project)")
+        c.execute("CREATE TABLE IF NOT EXISTS deleted_projects (code TEXT PRIMARY KEY, name TEXT, at TEXT, by TEXT)")
+        for sh, (key, cols) in TABLES.items():
+            t = sh.lower()
+            # no declared column types: SQLite keeps each value as given (int, real or text)
+            c.execute("CREATE TABLE IF NOT EXISTS %s (_rid INTEGER PRIMARY KEY, project TEXT NOT NULL, _meta TEXT, %s)" % (q_(t), ", ".join(q_(x) for x in cols)))
+            c.execute("CREATE INDEX IF NOT EXISTS %s ON %s(project)" % (q_("ix_%s_project" % t), q_(t)))
+            have = {r[1] for r in c.execute("PRAGMA table_info(%s)" % q_(t))}
+            for x in cols:   # a column added in a newer version is added to an existing database
+                if x not in have: c.execute("ALTER TABLE %s ADD COLUMN %s" % (q_(t), q_(x)))
+    c.close()
+
+def project_name(code):
+    c = connect()
+    try:
+        r = c.execute("SELECT name FROM projects WHERE code=?", (code_of(code),)).fetchone()
+        return (r[0] if r and r[0] else code)
+    finally: c.close()
+def logo_path():
+    for f in glob.glob(os.path.join(BASE, "logo.*")):
+        if f.lower().endswith((".png", ".jpg", ".jpeg")): return f
+    return None
+
+def project_exists(p):
+    c = connect()
+    try: return c.execute("SELECT 1 FROM projects WHERE code=?", (code_of(p),)).fetchone() is not None
+    finally: c.close()
+
 def read_state(p="LR001"):
-    wb = load_workbook(dbp(p), data_only=True); S = {}
+    p = code_of(p); c = connect()
+    try:
+        S = {}
+        for sh, (key, cols) in TABLES.items():
+            out = []
+            for r in c.execute("SELECT _meta, %s FROM %s WHERE project=? ORDER BY _rid" % (", ".join(q_(x) for x in cols), q_(sh.lower())), (p,)):
+                meta = json.loads(r[0]) if r[0] else {}; row = {}
+                for col, v in zip(cols, r[1:]):
+                    if v in (None, ""): continue
+                    if col in meta.get("j", ()): v = json.loads(v)
+                    elif col in meta.get("b", ()): v = bool(v)
+                    row[col] = v
+                if row: out.append(row)
+            S[key] = out
+        for key, fs in LISTF.items():
+            for x in S[key]:
+                for f in fs: x[f] = x[f] if isinstance(x.get(f), list) else []
+        st = {k: v for k, v in c.execute("SELECT key, value FROM settings WHERE project=?", (p,))}
+        ids = [i["id"] for i in S["items"] if "id" in i]
+        S["n"] = max(int(st.get("n") or 1), (max(ids) + 1) if ids else 1)
+        for key in ("snags", "ptw", "tbt", "inc", "reqs", "delays", "vars", "costs", "draws"):
+            for x in S[key]:
+                if isinstance(x.get("id"), int): S["n"] = max(S["n"], x["id"] + 1)
+        S["ratio"] = {k: int(st.get(k) or d) for k, d in (("sup", 8), ("log", 12), ("store", 20))}
+        if st.get("chkitems"): S["chkItems"] = json.loads(st["chkitems"])
+        S["teams"] = json.loads(st["teams"]) if st.get("teams") else []
+        S["chk"] = {str(k): json.loads(v or "[]") for k, v in c.execute("SELECT task_id, done FROM checklist WHERE project=?", (p,))}
+        S["ack"] = {str(k): bool(v) for k, v in c.execute("SELECT flag_key, done FROM flags_ack WHERE project=?", (p,))}
+        S["todo"] = [r[0] for r in c.execute("SELECT text FROM todo WHERE project=? ORDER BY id", (p,))]
+        for k, v in c.execute("SELECT key, value FROM config WHERE project=?", (p,)):
+            if k in CONFIG_KEYS:
+                try: S[k] = json.loads(v)
+                except Exception: pass
+        return S
+    finally: c.close()
+
+def _enc(v, col, meta):
+    if isinstance(v, bool): meta["b"].append(col); return int(v)
+    if isinstance(v, (list, dict, tuple)):
+        if not v: return None
+        meta["j"].append(col); return json.dumps(v, ensure_ascii=False)
+    return v
+
+def write_state(S, p="LR001"):
+    p = code_of(p); c = connect()
+    try:
+        with c:   # one transaction: all of the project's data is replaced together or not at all
+            nm = (S.get("proj") or {}).get("name")
+            c.execute("INSERT OR IGNORE INTO projects (code, name) VALUES (?, ?)", (p, nm or p))
+            if nm: c.execute("UPDATE projects SET name=? WHERE code=? AND IFNULL(name,'')<>?", (nm, p, nm))
+            for sh, (key, cols) in TABLES.items():
+                t = sh.lower(); c.execute("DELETE FROM %s WHERE project=?" % q_(t), (p,))
+                ins = "INSERT INTO %s (project, _meta, %s) VALUES (?, ?, %s)" % (q_(t), ", ".join(q_(x) for x in cols), ", ".join("?" * len(cols)))
+                for x in S.get(key, []):
+                    meta = {"b": [], "j": []}; vals = [_enc(x.get(col), col, meta) for col in cols]
+                    c.execute(ins, [p, json.dumps({k: v for k, v in meta.items() if v}) if (meta["b"] or meta["j"]) else None] + vals)
+            c.execute("DELETE FROM settings WHERE project=?", (p,))
+            sets = [("n", S.get("n", 1))] + list(S.get("ratio", {}).items()) + [("teams", json.dumps(S.get("teams", []), ensure_ascii=False))]
+            if S.get("chkItems"): sets.append(("chkitems", json.dumps(S["chkItems"], ensure_ascii=False)))
+            c.executemany("INSERT INTO settings (project, key, value) VALUES (?, ?, ?)", [(p, k, v) for k, v in sets])
+            c.execute("DELETE FROM checklist WHERE project=?", (p,))
+            c.executemany("INSERT INTO checklist (project, task_id, done) VALUES (?, ?, ?)", [(p, str(k), json.dumps([bool(x) for x in v])) for k, v in S.get("chk", {}).items()])
+            c.execute("DELETE FROM flags_ack WHERE project=?", (p,))
+            c.executemany("INSERT INTO flags_ack (project, flag_key, done) VALUES (?, ?, 1)", [(p, str(k)) for k, v in S.get("ack", {}).items() if v])
+            c.execute("DELETE FROM todo WHERE project=?", (p,))
+            c.executemany("INSERT INTO todo (project, text) VALUES (?, ?)", [(p, t_) for t_ in S.get("todo", [])])
+            c.execute("DELETE FROM config WHERE project=?", (p,))
+            c.executemany("INSERT INTO config (project, key, value) VALUES (?, ?, ?)", [(p, k, json.dumps(S[k], ensure_ascii=False)) for k in CONFIG_KEYS if S.get(k) is not None])
+    finally: c.close()
+
+def was_deleted(p):
+    """True when the project was deleted in the app; it is then not re-created from the seed, a legacy Excel file or a late save."""
+    c = connect()
+    try:
+        try: return c.execute("SELECT 1 FROM deleted_projects WHERE code=?", (code_of(p),)).fetchone() is not None
+        except sqlite3.OperationalError: return False
+    finally: c.close()
+def delete_project(p, by=""):
+    """Remove every row of one project from every table of fenestra.db (project data, library, documents, notices) in one transaction."""
+    p = code_of(p); c = connect()
+    try:
+        with c:
+            nm = project_name(p)
+            tabs = [r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")]
+            if "doc_files" in tabs and "documents" in tabs:
+                c.execute("DELETE FROM doc_files WHERE doc_id IN (SELECT id FROM documents WHERE project=?)", (p,))
+            n = 0
+            for t in tabs:
+                if t == "deleted_projects": continue
+                cols = {r[1] for r in c.execute("PRAGMA table_info(%s)" % q_(t))}
+                if "project" in cols: n += c.execute("DELETE FROM %s WHERE project=?" % q_(t), (p,)).rowcount
+            c.execute("DELETE FROM projects WHERE code=?", (p,))
+            c.execute("INSERT OR REPLACE INTO deleted_projects (code, name, at, by) VALUES (?, ?, ?, ?)", (p, nm, dt.datetime.now().strftime("%Y-%m-%d %H:%M"), by))
+        return n
+    finally: c.close()
+
+def get_tree():
+    c = connect()
+    try: return {code: {"parent": par or "", "kind": kind or "Project"} for code, par, kind in c.execute("SELECT code, parent, kind FROM projects")}
+    finally: c.close()
+def set_tree(code, parent, kind):
+    c = connect()
+    try:
+        with c: c.execute("UPDATE projects SET parent=?, kind=? WHERE code=?", (parent or "", kind, code))
+    finally: c.close()
+
+def list_projects():
+    c = connect()
+    try: rows_ = c.execute("SELECT code, name, parent, kind FROM projects ORDER BY code").fetchall()
+    finally: c.close()
+    codes = {r[0] for r in rows_}; out = []
+    for code, name, par, kind in rows_:
+        out.append({"code": code, "name": name or code, "parent": par if par in codes and par != code else "", "kind": kind if kind in KINDS else "Project"})
+    return out or [{"code": "LR001", "name": "LR001", "parent": "", "kind": "Project"}]
+
+# ---------------- one-time import of legacy Excel databases ----------------
+_XL_CLEAN_INTS = INTS
+def _xl_clean(k, v):
+    if isinstance(v, dt.datetime) or isinstance(v, dt.date): return v.strftime("%Y-%m-%d")
+    if isinstance(v, dt.time): return v.strftime("%H:%M")
+    if isinstance(v, float) and v == int(v) and k in _XL_CLEAN_INTS: return int(v)
+    return v.strip() if isinstance(v, str) else v
+def _xl_split(s, sep): return [t.strip() for t in str(s).split(sep) if t.strip()]
+def read_xlsx(path):
+    from openpyxl import load_workbook
+    wb = load_workbook(path, data_only=True); S = {}
+    def rows(ws): return [r for r in ws.iter_rows(min_row=2, values_only=True) if any(x not in (None, "") for x in r)]
     for sh, (key, cols) in TABLES.items():
-        S[key] = [{c: clean(c, v) for c, v in zip(cols, r) if v not in (None, "")} for r in rows(wb[sh])] if sh in wb.sheetnames else []
+        S[key] = [{c: _xl_clean(c, v) for c, v in zip(cols, r) if v not in (None, "")} for r in rows(wb[sh])] if sh in wb.sheetnames else []
     for x in S["items"]:
         if "ea" in x: x["ea"] = [t.strip() == "1" for t in str(x["ea"]).split(";")]
-        if "miss" in x: x["miss"] = [t.strip() for t in str(x["miss"]).split("|") if t.strip()]
+        if "miss" in x: x["miss"] = _xl_split(x["miss"], "|")
     for x in S["mail"]:
-        if "miss" in x: x["miss"] = [t.strip() for t in str(x["miss"]).split("|") if t.strip()]
+        if "miss" in x: x["miss"] = _xl_split(x["miss"], "|")
     for key, fs in LISTF.items():
         for x in S[key]:
-            for f in fs: x[f] = [t.strip() for t in str(x.get(f, "")).split(";") if t.strip()]
+            for f in fs: x[f] = _xl_split(x.get(f, ""), ";")
     st = {r[0]: r[1] for r in rows(wb["Settings"])} if "Settings" in wb.sheetnames else {}
-    ids = [i["id"] for i in S["items"] if "id" in i]
-    S["n"] = max(int(st.get("n") or 1), (max(ids) + 1) if ids else 1)
-    for key in ("snags", "ptw", "tbt", "inc", "reqs", "delays", "vars", "costs", "draws"):
-        for x in S[key]:
-            if isinstance(x.get("id"), int): S["n"] = max(S["n"], x["id"] + 1)
+    S["n"] = int(st.get("n") or 1)
     S["ratio"] = {k: int(st.get(k) or d) for k, d in (("sup", 8), ("log", 12), ("store", 20))}
-    if st.get("chkitems"): S["chkItems"] = [t.strip() for t in str(st["chkitems"]).split("|") if t.strip()]
-    S["teams"] = [t.strip() for t in str(st.get("teams", "")).split(",") if t.strip()]
+    if st.get("chkitems"): S["chkItems"] = _xl_split(st["chkitems"], "|")
+    S["teams"] = _xl_split(st.get("teams", ""), ",")
     S["chk"] = {str(r[0]): [x == "1" for x in str(r[1] or "").split(";") if x != ""] for r in rows(wb["Checklist"])} if "Checklist" in wb.sheetnames else {}
     S["ack"] = {str(r[0]): bool(r[1]) for r in rows(wb["Flags_Ack"])} if "Flags_Ack" in wb.sheetnames else {}
     S["todo"] = [r[0] for r in rows(wb["Todo"])] if "Todo" in wb.sheetnames else []
     if "Config" in wb.sheetnames:
         parts = {}
         for k, v in ((r[0], r[1]) for r in rows(wb["Config"])):
-            base_, _, n_ = str(k).partition("#"); parts.setdefault(base_, {})[int(n_ or 0)] = v or ""
+            b_, _, n_ = str(k).partition("#"); parts.setdefault(b_, {})[int(n_ or 0)] = v or ""
         for k, pp in parts.items():
             if k in CONFIG_KEYS:
                 try: S[k] = json.loads("".join(pp[i] for i in sorted(pp)))
                 except Exception: pass
     return S
 
-def write_state(S, p="LR001"):
-    DB = dbp(p)
-    if os.path.exists(DB): shutil.copy2(DB, DB + ".bak"); wb = load_workbook(DB)
-    else:
-        wb = Workbook(); wb.remove(wb.active); w = wb.create_sheet("README")
-        for r in README: w.append(r)
-        w.column_dimensions["A"].width = 120
-    def sheet(name, header, data):
-        ws = wb[name] if name in wb.sheetnames else wb.create_sheet(name)
-        ws.delete_rows(1, ws.max_row + 1); ws.append(header)
-        for c in ws[1]: c.font = Font(bold=True)
-        for d in data: ws.append(d)
-        ws.freeze_panes = "A2"
-        for i in range(len(header)): ws.column_dimensions[chr(65 + i) if i < 26 else "A" + chr(65 + i - 26)].width = 34 if header[i] in ("name", "n", "c", "desc", "text") else 14
-    for sh, (key, cols) in TABLES.items():
-        sheet(sh, cols, [[(cell(c, x[c]) if isinstance(x.get(c), list) else x.get(c)) for c in cols] for x in S.get(key, [])])
-    sheet("Settings", ["key", "value"], [["n", S.get("n", 1)]] + [[k, v] for k, v in S.get("ratio", {}).items()] + [["teams", ",".join(S.get("teams", []))]] + ([["chkitems", " | ".join(S["chkItems"])]] if S.get("chkItems") else []))
-    sheet("Checklist", ["task id", "items done (1/0, in order)"], [[k, ";".join("1" if x else "0" for x in v)] for k, v in S.get("chk", {}).items()])
-    sheet("Flags_Ack", ["flag key", "done"], [[k, bool(v)] for k, v in S.get("ack", {}).items() if v])
-    sheet("Todo", ["text"], [[t] for t in S.get("todo", [])])
-    cfg = []
-    for k in CONFIG_KEYS:
-        if S.get(k) is None: continue
-        js = json.dumps(S[k], ensure_ascii=False)
-        for i in range(0, max(1, len(js)), 30000): cfg.append([k if i == 0 else "%s#%d" % (k, i // 30000), js[i:i + 30000]])
-    sheet("Config", ["key", "value"], cfg)
-    tmp = DB + ".tmp"; wb.save(tmp); os.replace(tmp, DB)
-    nm = (S.get("proj") or {}).get("name")
-    idx = load_json(PROJ_FILE, {}); c = code_of(p)
-    if nm and idx.get(c) != nm: idx[c] = nm; save_json(PROJ_FILE, idx)
-
-def list_projects():
-    idx = load_json(PROJ_FILE, {}); out = []
-    for f in sorted(glob.glob(os.path.join(BASE, "AZAL_*_Project_DB.xlsx"))):
-        c = re.match(r"AZAL_(.+)_Project_DB\.xlsx", os.path.basename(f)).group(1)
-        out.append({"code": c, "name": idx.get(c, c)})
-    tr = load_json(TREE_FILE, {}); codes = {o["code"] for o in out}
-    for o in out:
-        t = tr.get(o["code"], {}); o["parent"] = t.get("parent") if t.get("parent") in codes and t.get("parent") != o["code"] else ""; o["kind"] = t.get("kind") if t.get("kind") in KINDS else "Project"
-    if not out: out = [{"code": "LR001", "name": "LR001"}]
-    return out
+def migrate_legacy():
+    """Copy every AZAL_<CODE>_Project_DB.xlsx that is not yet in the SQL database, plus projects.json / ptree.json.
+    The Excel files are left untouched (rename or delete them once you have checked the app)."""
+    files = sorted(glob.glob(os.path.join(BASE, "AZAL_*_Project_DB.xlsx")))
+    todo = []
+    for f in files:
+        m = re.match(r"AZAL_(.+)_Project_DB\.xlsx$", os.path.basename(f))
+        if m and not project_exists(m.group(1)) and not was_deleted(m.group(1)): todo.append((m.group(1), f))
+    if not todo: return
+    try: import openpyxl  # noqa: F401
+    except ImportError:
+        sys.exit("Found Excel project files (%s) that are not yet in fenestra.db.\nRun once:  pip install openpyxl   then start the server again to import them.\n(Not starting, so that your data is not hidden behind an empty project.)" % ", ".join(os.path.basename(f) for _, f in todo))
+    names = load_json(PROJ_FILE, {}); tree = load_json(TREE_FILE, {})
+    for code, f in todo:
+        S = read_xlsx(f)
+        if names.get(code): S.setdefault("proj", {}); S["proj"] = S["proj"] if S["proj"].get("name") else dict(S["proj"], name=names[code])
+        write_state(S, code); print("Imported %s into fenestra.db" % os.path.basename(f))
+    for code, _ in todo:
+        t = tree.get(code) or {}
+        if t.get("parent") and project_exists(t["parent"]) and t["parent"] != code:
+            set_tree(code, t["parent"], t.get("kind") if t.get("kind") in KINDS else "Project")
+        elif t.get("kind") in KINDS: set_tree(code, "", t["kind"])
 
 # ---------------- users and tokens ----------------
 ROLE_DEFAULTS = [("management", "Management", "Management"), ("pm", "Project manager", "Project manager"), ("planner", "Planning engineer", "Planning engineer"),
@@ -167,6 +295,14 @@ def users():
             if not demo: print("Management account created: user name 'management', password:", pw, "(change it at first login)")
             s, h = hash_pw(pw); u.append({"u": un, "name": name, "role": role, "email": "", "phone": "", "salt": s, "hash": h, "must": True})
         save_json(USERS_FILE, u)
+    # permanent administrator account (Management role), created once; the password is stored only as a salted hash
+    mk = os.path.join(BASE, ".admin_seeded")
+    if not os.path.exists(mk) and not any(x["u"].lower() == "couteau" for x in u):
+        u.append({"u": "Couteau", "name": "Couteau", "role": "Management", "email": "charles.couteau@gmail.com", "phone": "",
+                  "salt": "959b64febf8da9d5", "hash": "0b8f9a04807fd85321a752f9856cbddec56005b45893daa9e42b69aff9ba4de1", "must": False})
+        save_json(USERS_FILE, u)
+        try: open(mk, "w").write("1")
+        except OSError: pass
     return u
 def pub(u): return {k: u.get(k, "") for k in ("u", "name", "role", "email", "phone")} | {"must": bool(u.get("must")), "status": u.get("status", "active")}
 KNOWN_ROLES = [r for _, _, r in ROLE_DEFAULTS]
@@ -176,6 +312,18 @@ def company(): return load_json(COMPANY_FILE, {})
 SIGNUPS = []
 FAILS = {}
 ASKS = {}
+def audit_tail(n=500):
+    """Last n audit lines, newest first: [{at, ev, who, ip}]"""
+    fp = os.path.join(BASE, "audit.log"); out = []
+    try:
+        with open(fp, encoding="utf-8", errors="replace") as f: lines = f.readlines()[-max(1, min(n, 5000)):]
+    except OSError: return out
+    for ln in reversed(lines):
+        p = ln.rstrip("\n").split("\t")
+        if len(p) >= 2: out.append({"at": p[0], "ev": p[1], "who": p[2] if len(p) > 2 else "", "ip": p[3] if len(p) > 3 else ""})
+    return out
+
+
 def audit(ev, who="", ip=""):
     try:
         with open(os.path.join(BASE, "audit.log"), "a", encoding="utf-8") as f: f.write("%s\t%s\t%s\t%s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), ev, who, ip))
@@ -189,6 +337,10 @@ def user_by_name_or_role(n):
     return None
 
 def smtp_send(to, subject, body):
+    sink = os.environ.get("SMTP_SINK")   # testing aid: append messages to this file instead of sending them
+    if sink:
+        with open(sink, "a", encoding="utf-8") as f: f.write(json.dumps({"to": to, "subject": subject, "body": body}, ensure_ascii=False) + "\n")
+        return
     host = os.environ.get("SMTP_HOST")
     if not host: raise RuntimeError("Email is not configured on this server (set SMTP_HOST, SMTP_USER, SMTP_PASS).")
     e = EmailMessage(); e["From"] = os.environ.get("SMTP_FROM", os.environ.get("SMTP_USER", "")); e["To"] = to; e["Subject"] = subject; e.set_content(body)
@@ -257,9 +409,42 @@ def _notify(mails):
         r = deliver(u.get("email"), u.get("phone"), "Please accept site task: " + m["n"], "A task has been delegated to you: " + m["n"] + "\nOpen Fenestra Site and press Accept.")
         if any(v.startswith("failed") for v in r.values()): print("notification failed:", r)
 
+COPYRIGHT_HOLDER = os.environ.get("COPYRIGHT_HOLDER", "Charles Couteau")
+PRICE_ROLES = {"Management", "Project manager"}   # only these roles receive or can change BOQ prices
+PRICE_KEYS = ("cr", "bc", "vr")
+def strip_prices(St):
+    for it in St.get("items") or []:
+        for k in PRICE_KEYS: it.pop(k, None)
+    return St
+def keep_prices(new, old):
+    o = {i.get("id"): i for i in (old.get("items") or [])}
+    for it in new.get("items") or []:
+        for k in PRICE_KEYS: it.pop(k, None)
+        src = o.get(it.get("id"))
+        if src:
+            for k in PRICE_KEYS:
+                if k in src: it[k] = src[k]
+    return new
+NO_KPI_ROLES = {"Main contractor"}      # roles that are never sent the KPI / certificate module
+_APP_CACHE = {}
+def app_payload(role):
+    """The application page, assembled per role after login. Without a dist/ folder (development) the readable index.html is sent."""
+    d = os.path.join(APP, "dist")
+    if not os.path.exists(os.path.join(d, "app.html")):
+        return open(os.path.join(APP, "index.html"), "rb").read()
+    def part(n):
+        if n not in _APP_CACHE: _APP_CACHE[n] = open(os.path.join(d, n), encoding="utf-8").read()
+        return _APP_CACHE[n]
+    scripts = "<script>window.__CR=%s</script>" % json.dumps(COPYRIGHT_HOLDER).replace("</", "<\\/")
+    scripts += "<script>" + part("a.js") + "</script>"
+    if role not in NO_KPI_ROLES: scripts += "<script>" + part("k.js") + "</script>"
+    scripts += "<script>" + part("b.js") + "</script>"
+    return part("app.html").replace("<!--#SCRIPTS-->", scripts).encode("utf-8")
+
 class H(BaseHTTPRequestHandler):
-    def out(s, code, body, ct="application/json"):
+    def out(s, code, body, ct="application/json", extra=None):
         b = body if isinstance(body, bytes) else body.encode(); s.send_response(code); s.send_header("Content-Type", ct)
+        for k_, v_ in (extra or {}).items(): s.send_header(k_, v_)
         s.send_header("Content-Length", str(len(b))); s.send_header("X-Content-Type-Options", "nosniff"); s.send_header("X-Frame-Options", "SAMEORIGIN"); s.send_header("Referrer-Policy", "same-origin")
         if s.headers.get("X-Forwarded-Proto") == "https": s.send_header("Strict-Transport-Security", "max-age=31536000")
         s.end_headers(); s.wfile.write(b)
@@ -274,6 +459,26 @@ class H(BaseHTTPRequestHandler):
         return s.client_address[0]
     def q(s): return parse_qs(urlparse(s.path).query)
     def proj(s): return code_of((s.q().get("p") or ["LR001"])[0])
+    def site_file(s, path):
+        """Public landing-page files (images, videos) with Range support so videos can seek."""
+        name = os.path.basename(path); fp = os.path.join(APP, "site", name)
+        if not name or name.startswith(".") or not os.path.isfile(fp): s.out(404, ""); return
+        ext = name.rsplit(".", 1)[-1].lower()
+        ct = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp", "mp4": "video/mp4", "webm": "video/webm", "svg": "image/svg+xml", "css": "text/css", "js": "text/javascript", "ico": "image/x-icon"}.get(ext)
+        if not ct: s.out(404, ""); return
+        size = os.path.getsize(fp); rng = s.headers.get("Range", ""); a, b, code = 0, size - 1, 200
+        m = re.match(r"bytes=(\d*)-(\d*)$", rng)
+        if m and (m.group(1) or m.group(2)):
+            if m.group(1): a = int(m.group(1)); b = int(m.group(2)) if m.group(2) else size - 1
+            else: a = max(0, size - int(m.group(2))); b = size - 1
+            b = min(b, size - 1)
+            if a > b: s.send_response(416); s.send_header("Content-Range", "bytes */%d" % size); s.send_header("Content-Length", "0"); s.end_headers(); return
+            code = 206
+        with open(fp, "rb") as f: f.seek(a); body = f.read(b - a + 1)
+        s.send_response(code); s.send_header("Content-Type", ct); s.send_header("Accept-Ranges", "bytes"); s.send_header("Cache-Control", "public, max-age=3600"); s.send_header("X-Content-Type-Options", "nosniff")
+        if code == 206: s.send_header("Content-Range", "bytes %d-%d/%d" % (a, b, size))
+        s.send_header("Content-Length", str(len(body))); s.end_headers()
+        if s.command != "HEAD": s.wfile.write(body)
     def do_GET(s):
         path = urlparse(s.path).path
         if path.startswith("/photos/"):
@@ -287,7 +492,7 @@ class H(BaseHTTPRequestHandler):
             else: s.out(404, "")
         elif path == "/healthz": s.out(200, '{"ok":true}')
         elif path == "/api/public":
-            c = company(); s.out(200, json.dumps({"name": c.get("name", ""), "logo": c.get("logo", "")}))
+            c = company(); s.out(200, json.dumps({"name": c.get("name", ""), "logo": c.get("logo", ""), "copyright": COPYRIGHT_HOLDER}))
         elif path.startswith("/api/"):
             u = s.me()
             if path == "/api/ping": s.out(200, '{"ok":true}'); return
@@ -307,14 +512,44 @@ class H(BaseHTTPRequestHandler):
                 with LOCK:
                     try:
                         p = s.proj()
-                        if not os.path.exists(dbp(p)):
-                            if p == "LR001" and os.path.exists(os.path.join(APP, "seed_state.json")): write_state(json.load(open(os.path.join(APP, "seed_state.json"))), p)
+                        if not project_exists(p):
+                            if p == "LR001" and not was_deleted(p) and os.path.exists(os.path.join(APP, "seed_state.json")): write_state(json.load(open(os.path.join(APP, "seed_state.json"))), p)
                             else: s.out(404, '{"error":"unknown project"}'); return
-                        s.out(200, json.dumps(read_state(p)))
-                    except PermissionError: s.out(423, '{"error":"close the Excel file"}')
+                        s.out(200, json.dumps(read_state(p) if u["role"] in PRICE_ROLES else strip_prices(read_state(p))))
+                    except sqlite3.OperationalError: s.out(423, '{"error":"database busy, try again"}')
+            elif path.startswith("/api/docs/"): s.docs_get(path, u)
+            elif path == "/api/audit":
+                if u["role"] != "Management": s.out(403, '{"error":"management only"}'); return
+                s.out(200, json.dumps(audit_tail(int((s.q().get("n") or ["500"])[0] or 500)))); return
+            elif path == "/api/lib/list":
+                s.out(200, json.dumps({"cats": lib.CATS, "items": lib.listing(s.proj(), u["role"] == "Main contractor")})); return
+            elif path == "/api/lib/file":
+                fl = lib.get(s.proj(), int((s.q().get("id") or ["0"])[0] or 0), u["role"] == "Main contractor")
+                if not fl: s.out(404, '{"error":"not found"}'); return
+                s.out(200, fl[2], fl[1], {"Content-Disposition": 'attachment; filename="%s"' % re.sub(r'[^A-Za-z0-9._-]', "_", fl[0])}); return
+            elif path == "/api/app":
+                s.out(200, app_payload(u["role"]), "text/html; charset=utf-8", {"Cache-Control": "no-store"}); return
+            elif path == "/api/changelog":
+                fp = os.path.join(APP, "legal", "release_history.json")
+                s.out(200, open(fp, "rb").read() if os.path.exists(fp) else "[]"); return
+            elif path == "/api/legal":
+                nm = {"LICENSE": "LICENSE.txt", "COPYRIGHT": "COPYRIGHT.txt", "THIRD_PARTY": "THIRD_PARTY_NOTICES.txt"}.get((s.q().get("f") or [""])[0])
+                fp = os.path.join(APP, nm or "-")
+                if not nm or not os.path.exists(fp): s.out(404, '{"error":"not found"}'); return
+                s.out(200, open(fp, "rb").read(), "text/plain; charset=utf-8"); return
+            elif path == "/api/manual":
+                fp = os.path.join(APP, "Fenestra_User_Manual.pdf")
+                if not os.path.exists(fp): s.out(404, '{"error":"not found"}'); return
+                s.out(200, open(fp, "rb").read(), "application/pdf", {"Content-Disposition": 'attachment; filename="Fenestra_User_Manual.pdf"'}); return
+            elif path == "/api/watch/status":
+                if u["role"] not in ("Management", "Project manager", "Planning engineer"): s.out(403, '{"error":"not allowed"}'); return
+                s.out(200, json.dumps(watch.status(DB_FILE, s.proj(), read_state(s.proj())))); return
             else: s.out(404, "{}")
+        elif path in ("/welcome", "/welcome/"): s.out(200, open(os.path.join(APP, "site", "index.html"), "rb").read(), "text/html; charset=utf-8", {"Cache-Control": "no-cache"})
+        elif path.startswith("/site/"): s.site_file(path)
         elif path in ASSETS: f, ct = ASSETS[path]; s.out(200, open(os.path.join(APP, f), "rb").read(), ct)
-        else: s.out(200, open(os.path.join(APP, "index.html"), "rb").read(), "text/html; charset=utf-8")
+        elif os.environ.get("APP_DEV") == "1" and os.path.exists(os.path.join(APP, "index.html")): s.out(200, open(os.path.join(APP, "index.html"), "rb").read(), "text/html; charset=utf-8")
+        else: s.out(200, open(os.path.join(APP, "shell.html"), "rb").read(), "text/html; charset=utf-8", {"Cache-Control": "no-cache"})
     def do_POST(s):
         path = urlparse(s.path).path
         n = int(s.headers.get("Content-Length", 0) or 0)
@@ -423,6 +658,16 @@ class H(BaseHTTPRequestHandler):
                 data = xer_detail.build(B)
             except Exception as ex: s.out(400, json.dumps({"error": "Could not build the XER: %s" % ex})); return
             s.out(200, data, "text/plain; charset=windows-1252"); return
+        if path == "/api/xer/excel":   # any Excel programme -> complete P6 project (.xer)
+            if u["role"] not in ("Management", "Project manager", "Planning engineer"): s.out(403, '{"error":"Only the planning engineer, project manager or Management can convert programs"}'); return
+            try:
+                import xer_detail
+                if not isinstance(B.get("acts"), list) or not B["acts"]: s.out(400, '{"error":"No activities to convert"}'); return
+                if len(B["acts"]) > 20000: s.out(400, '{"error":"Too many activities (max 20000)"}'); return
+                data, summ = xer_detail.build_generic(B)
+            except Exception as ex: s.out(400, json.dumps({"error": "Could not build the XER: %s" % ex})); return
+            audit("excel program converted to XER %s (%d activities)" % (B.get("proj", ""), summ["acts"]), u["u"], s.ip())
+            s.out(200, data, "text/plain; charset=windows-1252", {"X-Summary": json.dumps(summ)}); return
         if path == "/api/ask":
             key = os.environ.get("ANTHROPIC_API_KEY")
             if not key: s.out(501, '{"error":"AI guide is not configured on this server"}'); return
@@ -457,41 +702,168 @@ class H(BaseHTTPRequestHandler):
             if u["role"] not in ("Management", "Project manager", "Planning engineer"): s.out(403, '{"error":"not allowed"}'); return
             c = code_of(B.get("code", ""))
             with LOCK:
-                if os.path.exists(dbp(c)): s.out(400, '{"error":"that project code exists"}'); return
+                if project_exists(c): s.out(400, '{"error":"that project code exists"}'); return
                 st = B.get("state") or {}; st.setdefault("proj", {"code": c, "name": B.get("name", c)}); write_state(st, c)
+                cn = connect()
+                try:
+                    with cn: cn.execute("DELETE FROM deleted_projects WHERE code=?", (c,))
+                finally: cn.close()
                 par = code_of(B.get("parent", "")) if B.get("parent") else ""
-                if par and os.path.exists(dbp(par)):
-                    tr = load_json(TREE_FILE, {}); tr[c] = {"parent": par, "kind": B.get("kind") if B.get("kind") in KINDS else "Sub-project"}; save_json(TREE_FILE, tr)
+                if par and project_exists(par): set_tree(c, par, B.get("kind") if B.get("kind") in KINDS else "Sub-project")
+            s.out(200, json.dumps(list_projects())); return
+        if path == "/api/project/delete":
+            if u["role"] not in ("Management", "Project manager"): s.out(403, '{"error":"Only Management or the project manager can delete a project"}'); return
+            c = code_of(B.get("code", ""))
+            if str(B.get("confirm", "")).strip() != c: s.out(400, '{"error":"Type the project code exactly to confirm"}'); return
+            with LOCK:
+                if not project_exists(c): s.out(404, '{"error":"unknown project"}'); return
+                pl = list_projects()
+                if len(pl) <= 1: s.out(400, '{"error":"This is the only project. Create another project before deleting this one."}'); return
+                kids = [x["code"] for x in pl if x.get("parent") == c]
+                if kids: s.out(400, json.dumps({"error": "This project has sub-projects (%s). Delete them or move them to another parent first." % ", ".join(kids)})); return
+                try:   # safety copy of the whole database before anything is removed
+                    d = os.path.join(BASE, "backups"); os.makedirs(d, exist_ok=True)
+                    open(os.path.join(d, "before_delete_%s_%s.zip" % (c, time.strftime("%Y-%m-%d_%H%M%S"))), "wb").write(make_backup(False))
+                except Exception as e_: print("pre-delete backup failed:", repr(e_))
+                try: n = delete_project(c, u["u"])
+                except sqlite3.OperationalError: s.out(423, '{"error":"database busy, try again"}'); return
+            audit("project deleted %s (%d rows)" % (c, n), u["u"], s.ip())
             s.out(200, json.dumps(list_projects())); return
         if path == "/api/ptree":
             if u["role"] not in ("Management", "Project manager", "Planning engineer"): s.out(403, '{"error":"not allowed"}'); return
             c = code_of(B.get("code", "")); par = code_of(B.get("parent", "")) if B.get("parent") else ""
             with LOCK:
-                if not os.path.exists(dbp(c)): s.out(404, '{"error":"unknown project"}'); return
-                if par and not os.path.exists(dbp(par)): s.out(400, '{"error":"unknown parent"}'); return
-                tr = load_json(TREE_FILE, {}); a = par
+                if not project_exists(c): s.out(404, '{"error":"unknown project"}'); return
+                if par and not project_exists(par): s.out(400, '{"error":"unknown parent"}'); return
+                tr = get_tree(); a = par
                 while a:
                     if a == c: s.out(400, '{"error":"a project cannot sit under itself or its own sub-projects"}'); return
                     a = (tr.get(a) or {}).get("parent", "")
-                tr[c] = {"parent": par, "kind": B.get("kind") if B.get("kind") in KINDS else (tr.get(c) or {}).get("kind", "Project")}; save_json(TREE_FILE, tr)
+                set_tree(c, par, B.get("kind") if B.get("kind") in KINDS else (tr.get(c) or {}).get("kind", "Project"))
             s.out(200, json.dumps(list_projects())); return
         if u["role"] == "Main contractor": s.out(403, '{"error":"read only"}'); return
+        if path.startswith("/api/docs/"): s.docs_post(path, u, B); return
+        if path in ("/api/lib/upload", "/api/lib/delete"):
+            if path == "/api/lib/upload":
+                if u["role"] == "Main contractor": s.out(403, '{"error":"not allowed"}'); return
+                try:
+                    d = str(B.get("data", "")); raw = base64.b64decode(d.split(",", 1)[1] if "," in d else d)
+                    i = lib.add(s.proj(), B.get("category"), B.get("title"), B.get("filename"), B.get("mime"), raw, B.get("rev"), bool(B.get("shared")) and u["role"] in ("Management", "Project manager"), u["u"])
+                except (ValueError, KeyError) as e: s.out(400, json.dumps({"error": str(e)})); return
+                audit("library upload %s %s" % (i, B.get("filename")), u["u"], s.ip()); s.out(200, json.dumps({"id": i})); return
+            i = int(B.get("id", 0) or 0)
+            if u["role"] not in ("Management", "Project manager") and lib.owner(s.proj(), i) != u["u"]: s.out(403, '{"error":"not allowed"}'); return
+            lib.remove(s.proj(), i); audit("library delete %s" % i, u["u"], s.ip()); s.out(200, "{}"); return
         p = s.proj()
         if path == "/api/chat":
             with LOCK:
+                if not project_exists(p) and was_deleted(p): s.out(410, '{"error":"this project was deleted"}'); return
                 try:
                     cur = read_state(p); m = {k: B.get(k, "") for k in ("d", "tm", "proj", "by", "text")}
                     m["id"] = max([c.get("id", 0) for c in cur["chat"] if isinstance(c.get("id"), int)] + [0]) + 1
                     cur["chat"].append(m); write_state(cur, p); s.out(200, json.dumps(cur["chat"]))
-                except PermissionError: s.out(423, '{"error":"close the Excel file"}')
+                except sqlite3.OperationalError: s.out(423, '{"error":"database busy, try again"}')
             return
         if path == "/api/state":
             with LOCK:
+                if not project_exists(p) and was_deleted(p): s.out(410, '{"error":"this project was deleted"}'); return
                 try:
-                    cur = read_state(p) if os.path.exists(dbp(p)) else {"mail": [], "chat": []}
-                    old = len(cur["mail"]); B["chat"] = cur["chat"]; write_state(B, p); notify(B.get("mail", [])[old:]); s.out(200, "{}")
-                except PermissionError: s.out(423, '{"error":"close the Excel file"}')
+                    cur = read_state(p) if project_exists(p) else {"mail": [], "chat": []}
+                    old = len(cur["mail"]); B["chat"] = cur["chat"]
+                    if u["role"] not in PRICE_ROLES: keep_prices(B, cur)
+                    write_state(B, p); notify(B.get("mail", [])[old:]); s.out(200, "{}")
+                except sqlite3.OperationalError: s.out(423, '{"error":"database busy, try again"}')
             return
+        s.out(404, "{}")
+
+    # ---------------- document engine (numbering, register, formats, reports) ----------------
+    def docs_hide(s, u): return () if u["role"] in ("Management", "Project manager") else tuple(docs.COMMERCIAL)
+    def docs_file_out(s, fl, inline=False):
+        if not fl: s.out(404, '{"error":"no file for this item"}'); return
+        fn, mime, blob = fl
+        s.out(200, blob, mime, {"Content-Disposition": 'attachment; filename="%s"' % re.sub(r'[^A-Za-z0-9._-]', "_", fn)})
+    def docs_get(s, path, u):
+        q = lambda k, d="": (s.q().get(k) or [d])[0]; p = s.proj(); hide = s.docs_hide(u)
+        try:
+            if path == "/api/docs/config":
+                have = {m: docs._has(m) for m in ("openpyxl", "pypdf", "reportlab")}; have["libreoffice"] = bool(shutil.which("soffice") or shutil.which("libreoffice"))
+                nc = [x for x in docs.numbering_config(p) if x["type"] not in hide]; tp = [t for t in docs.list_templates(p) if t["type"] not in hide]
+                s.out(200, json.dumps({"numbering": nc, "templates": tp, "have": have, "can_edit": u["role"] in ("Management", "Project manager")})); return
+            if path == "/api/docs/list":
+                s.out(200, json.dumps(docs.list_docs(p, q("type"), q("q"), q("status"), q("from"), q("to"), hide=hide))); return
+            if path == "/api/docs/sigs":
+                s.out(200, json.dumps({k: v for k, v in docs.sigs(p).items() if k.split("|")[0] not in hide})); return
+            if path == "/api/docs/get":
+                d = docs.get_doc(p, int(q("id", "0")))
+                if not d or d["type"] in hide: s.out(404, '{"error":"not found"}'); return
+                s.out(200, json.dumps(d)); return
+            if path == "/api/docs/file":
+                did = int(q("id", "0")); t = docs.doc_type_of(p, did)
+                if not t or t in hide: s.out(404, '{"error":"not found"}'); return
+                if q("regen") == "1" and u["role"] not in ("Management", "Project manager", "Quality engineer"): s.out(403, '{"error":"not allowed"}'); return
+                s.docs_file_out(docs.get_file(p, did, q("regen") == "1", q("as"))); return
+            if path == "/api/docs/report":
+                fmt = q("fmt", "xlsx"); t = q("type")
+                if t and t in hide: s.out(403, '{"error":"not allowed"}'); return
+                rows = docs.list_docs(p, t, q("q"), q("status"), q("from"), q("to"), hide=hide)
+                rows = [r for r in rows if r["status"] != "Reserved" or q("reserved") == "1"]
+                title = (docs.DOC_TYPES[t]["label"] + " register") if t in docs.DOC_TYPES else "Document register"
+                audit("docs report %s %s %d" % (fmt, t or "all", len(rows)), u["u"], s.ip())
+                s.docs_file_out(docs.report(p, fmt, rows, title, q("copies", "orig"))); return
+            if path in ("/api/docs/template/file", "/api/docs/template/test", "/api/docs/template/starter"):
+                if u["role"] not in ("Management", "Project manager"): s.out(403, '{"error":"not allowed"}'); return
+                if path.endswith("starter"): s.docs_file_out(docs.starter(q("type"), q("kind"))); return
+                r = docs.template_row(int(q("id", "0")))
+                if not r or r["project"] not in ("", p): s.out(404, '{"error":"not found"}'); return
+                if path.endswith("file"): s.docs_file_out((r["filename"], "application/octet-stream", bytes(r["blob"]))); return
+                fn, mime, blob, unk = docs.test_render(p, r["id"]); s.docs_file_out((fn, mime, blob)); return
+        except (ValueError, KeyError) as e: s.out(400, json.dumps({"error": str(e)})); return
+        except RuntimeError as e: s.out(501, json.dumps({"error": str(e)})); return
+        except Exception as e:
+            print("docs error:", repr(e)); s.out(500, json.dumps({"error": "%s: %s" % (type(e).__name__, e)})); return
+        s.out(404, "{}")
+    def docs_post(s, path, u, B):
+        p = s.proj(); admin = u["role"] in ("Management", "Project manager"); who = u.get("name") or u["u"]; hide = s.docs_hide(u)
+        try:
+            if path == "/api/docs/alloc":
+                t = str(B.get("type", ""))
+                if t in hide: s.out(403, '{"error":"not allowed"}'); return
+                s.out(200, json.dumps(docs.allocate(p, t, B.get("date"), who, B.get("floor") or 0))); return
+            if path == "/api/docs/register":
+                items = B.get("items") if isinstance(B.get("items"), list) else [{"type": B.get("type"), "doc": B.get("doc") or {}}]
+                out = []
+                for it in items[:200]:
+                    t = str(it.get("type", ""))
+                    if t in hide: continue
+                    r = docs.register(p, t, it.get("doc") or {}, who); out.append({"type": t, "number": r["number"], "asked": (it.get("doc") or {}).get("number"), "dup": r["dup"]})
+                s.out(200, json.dumps({"ok": True, "done": out})); return
+            if path == "/api/docs/letter":
+                r = docs.allocate(p, "LTR", B.get("date"), who)
+                d = {"number": r["number"], "date": B.get("date") or docs.today(), "title": str(B.get("title", ""))[:300], "to": B.get("to", ""), "from": B.get("from") or who, "ref": B.get("ref", ""),
+                     "status": "Issued", "body": str(B.get("body", ""))[:20000], "sent": bool(B.get("sent")), "fields": {}, "lists": {}, "sig": "L" + uuid.uuid4().hex[:8], "src": "LTR:" + uuid.uuid4().hex[:10]}
+                x = docs.register(p, "LTR", d, who); audit("letter " + r["number"], u["u"], s.ip()); s.out(200, json.dumps({"id": x["id"], "number": x["number"]})); return
+            if not admin and path not in ("/api/docs/regen",): s.out(403, '{"error":"Management or the project manager only"}'); return
+            if path == "/api/docs/numbering":
+                docs.set_numbering(p, str(B.get("type", "")), B.get("pattern"), B.get("start"), B.get("reset"), B.get("next"))
+                audit("numbering %s %s start %s" % (B.get("type"), B.get("pattern"), B.get("start")), u["u"], s.ip())
+                s.out(200, json.dumps({"numbering": docs.numbering_config(p)})); return
+            if path == "/api/docs/void":
+                docs.void_doc(p, int(B.get("id", 0)), B.get("reason"), who); audit("void doc %s" % B.get("id"), u["u"], s.ip()); s.out(200, "{}"); return
+            if path == "/api/docs/regen":
+                if u["role"] not in ("Management", "Project manager", "Quality engineer"): s.out(403, '{"error":"not allowed"}'); return
+                docs.make_file(p, int(B.get("id", 0))); s.out(200, "{}"); return
+            if path == "/api/docs/template":
+                d = str(B.get("data", "")); raw = base64.b64decode(d.split(",", 1)[1] if "," in d else d)
+                res = docs.add_template(p, B.get("scope") != "project", str(B.get("type", "")), str(B.get("name", "")), str(B.get("filename", "")), raw, B.get("opts") or {}, who)
+                audit("template %s %s" % (B.get("type"), B.get("filename")), u["u"], s.ip()); s.out(200, json.dumps(res)); return
+            if path == "/api/docs/template/active":
+                docs.set_template_active(p, int(B.get("id", 0)), bool(B.get("active"))); s.out(200, "{}"); return
+            if path == "/api/docs/template/delete":
+                docs.delete_template(p, int(B.get("id", 0))); audit("template deleted %s" % B.get("id"), u["u"], s.ip()); s.out(200, "{}"); return
+        except (ValueError, KeyError) as e: s.out(400, json.dumps({"error": str(e)})); return
+        except RuntimeError as e: s.out(501, json.dumps({"error": str(e)})); return
+        except Exception as e:
+            print("docs error:", repr(e)); s.out(500, json.dumps({"error": "%s: %s" % (type(e).__name__, e)})); return
         s.out(404, "{}")
     def log_message(s, *a): pass
 
@@ -501,11 +873,18 @@ def is_persistent():
     try: return os.stat(BASE).st_dev != os.stat("/").st_dev or os.environ.get("ASSUME_PERSISTENT") == "1"
     except OSError: return True
 def make_backup(photos=False):
-    import io, zipfile
+    import io, tempfile, zipfile
     b = io.BytesIO()
     with zipfile.ZipFile(b, "w", zipfile.ZIP_DEFLATED) as z:
         for f in glob.glob(os.path.join(BASE, "*")):
-            if os.path.isfile(f) and not f.endswith((".tmp", ".bak")): z.write(f, os.path.basename(f))
+            if os.path.isfile(f) and not f.endswith((".tmp", ".bak")) and not os.path.basename(f).startswith("fenestra.db"): z.write(f, os.path.basename(f))
+        src_ = connect()   # consistent snapshot via SQLite's backup API (safe while the app is writing)
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                snap = os.path.join(td, "fenestra.db"); dst = sqlite3.connect(snap); src_.backup(dst); dst.close()
+                z.write(snap, "fenestra.db")
+            z.writestr("fenestra.sql", "\n".join(src_.iterdump()) + "\n")   # plain SQL text, restorable with: sqlite3 new.db < fenestra.sql
+        finally: src_.close()
         if photos:
             for f in glob.glob(os.path.join(BASE, "photos", "*")): z.write(f, "photos/" + os.path.basename(f))
     return b.getvalue()
@@ -515,6 +894,15 @@ def daily_backup():
     with LOCK: data = make_backup(False)
     open(fn, "wb").write(data)
     for old in sorted(glob.glob(os.path.join(d, "*.zip")))[:-14]: os.remove(old)
+
+def watch_loop():
+    # every 10 minutes: delegation alarms, daily project-manager reminders and unassigned-task notices (see watch.py)
+    while True:
+        try:
+            if os.environ.get("SMTP_HOST") or wa_provider():   # without email/WhatsApp configured nothing is sent (the app still shows the alerts)
+                watch.run_once(DB_FILE, [p["code"] for p in list_projects()], read_state, deliver, users(), project_name=project_name)
+        except Exception as x: print("watch error:", repr(x))
+        time.sleep(600)
 
 def saturday_loop():
     # every Saturday (server clock), email site engineers who have an address, if SMTP is configured
@@ -534,12 +922,16 @@ def saturday_loop():
 
 if __name__ == "__main__":
     port = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else int(os.environ.get("PORT", 8000))
-    users()
-    if not os.path.exists(dbp("LR001")) and os.path.exists(os.path.join(APP, "seed_state.json")): write_state(json.load(open(os.path.join(APP, "seed_state.json"))), "LR001")
+    users(); init_db(); migrate_legacy()
+    docs.init(DB_FILE, company, project_name, logo_path)
+    if not project_exists("LR001") and not was_deleted("LR001") and os.path.exists(os.path.join(APP, "seed_state.json")): write_state(json.load(open(os.path.join(APP, "seed_state.json"))), "LR001")
     print(f"Open http://localhost:{port}" + ("   LAN: http://<this-laptop-ip>:%d" % port if "--lan" in sys.argv else ""))
     if os.environ.get("SEED_DEMO_USERS", "1") != "0": print("First logins: user names management, pm, planner, siteeng, qe, hse, contractor, production. Password azal2026 (you must change it at first login).")
+    print("Database:", DB_FILE)
     print("Email:", "on" if os.environ.get("SMTP_HOST") else "off", "| WhatsApp:", wa_provider() or "off", "| AI guide:", "on" if os.environ.get("ANTHROPIC_API_KEY") else "off")
     if not is_persistent(): print("WARNING: %s is not a mounted volume. Users and project data will be LOST on every redeploy or restart. Attach a persistent volume at %s (set ASSUME_PERSISTENT=1 if it is persistent but not detected)." % (BASE, BASE))
+    watch.init(DB_FILE); lib.init(DB_FILE)
+    threading.Thread(target=watch_loop, daemon=True).start()
     threading.Thread(target=saturday_loop, daemon=True).start()
     ThreadingHTTPServer.daemon_threads = True
     ThreadingHTTPServer(("0.0.0.0" if ("--lan" in sys.argv or os.environ.get("PORT")) else "127.0.0.1", port), H).serve_forever()

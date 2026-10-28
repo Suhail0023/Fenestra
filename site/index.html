@@ -1,0 +1,313 @@
+<!doctype html>
+<!-- Fenestra Site - Copyright (c) 2026 Charles Couteau. All rights reserved. Proprietary and confidential; see LICENSE.txt. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fenestra Site - Fenestration installation control, from BOQ to monthly IPA</title>
+<meta name="description" content="Fenestra Site plans, delegates, inspects and claims fenestration installation work: BOQ and P6, QR clock-in, WIR and MIR, numbered letters, IPA, delay claims, monthly KPIs and certificates.">
+<link rel="icon" href="/site/icon.png">
+<style>
+:root{--bg:#f6f8f9;--pn:#fff;--ink:#14212b;--mu:#586873;--ln:#d9e1e6;--ac:#0f766e;--ac2:#0b5a54;--soft:#e6f3f1;--am:#b45309;--sh:0 8px 30px rgba(15,40,50,.10)}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1519;--pn:#162027;--ink:#e8eff3;--mu:#9fb0ba;--ln:#263641;--ac:#2bb3a6;--ac2:#5ccfc4;--soft:#12302e;--am:#f2a54a;--sh:0 8px 30px rgba(0,0,0,.45)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+a{color:var(--ac)}img,video{max-width:100%;display:block}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--pn) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--ln)}
+header.top .wrap{display:flex;align-items:center;gap:18px;height:62px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;color:var(--ink);text-decoration:none}
+.brand img{width:30px;height:30px;border-radius:7px}
+nav.m{display:flex;gap:4px;margin-left:auto;align-items:center}
+nav.m a{color:var(--ink);text-decoration:none;padding:8px 11px;border-radius:8px;font-size:15px}
+nav.m a:hover{background:var(--soft)}
+nav.m a.btn{color:#fff}nav.m a.btn.o{color:var(--ac)}nav.m a.btn:hover{background:var(--ac2)}nav.m a.btn.o:hover{background:var(--soft)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ac);background:var(--ac);color:#fff;font:inherit;font-weight:600;padding:11px 20px;border-radius:10px;text-decoration:none;cursor:pointer}
+.btn:hover{background:var(--ac2);border-color:var(--ac2)}
+.btn.o{background:transparent;color:var(--ac)}.btn.o:hover{background:var(--soft)}
+.btn.s{padding:8px 15px;font-size:15px}
+@media(max-width:860px){nav.m a.h{display:none}}
+.hero{padding:64px 0 38px;background:radial-gradient(1100px 380px at 80% -10%,var(--soft),transparent)}
+.hero .wrap{display:grid;grid-template-columns:1.02fr 1.1fr;gap:42px;align-items:center}
+@media(max-width:960px){.hero .wrap{grid-template-columns:1fr}}
+.kick{display:inline-block;background:var(--soft);color:var(--ac2);font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:99px;margin-bottom:16px}
+h1{font-size:clamp(32px,4.4vw,52px);line-height:1.08;margin:0 0 16px;letter-spacing:-.8px}
+.lead{font-size:19px;color:var(--mu);max-width:560px;margin:0 0 26px}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.shot{border:1px solid var(--ln);border-radius:14px;box-shadow:var(--sh);overflow:hidden;background:var(--pn)}
+.shot img{width:100%;height:auto}
+.facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:26px;color:var(--mu);font-size:14.5px}
+.facts b{color:var(--ink)}
+section{padding:68px 0;scroll-margin-top:70px}
+section.alt{background:var(--pn);border-block:1px solid var(--ln)}
+h2{font-size:clamp(26px,3vw,36px);line-height:1.15;margin:0 0 10px;letter-spacing:-.4px}
+.sub{color:var(--mu);max-width:720px;margin:0 0 34px;font-size:17px}
+.grid{display:grid;gap:18px}
+.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:980px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.g3,.g4,.g2{grid-template-columns:1fr}}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:14px;padding:22px}
+section.alt .card{background:var(--bg)}
+.card .ic{font-size:26px;line-height:1;margin-bottom:10px}
+.card h3{margin:0 0 6px;font-size:18px}.card p{margin:0;color:var(--mu);font-size:15.5px}
+.card ul{margin:8px 0 0;padding-left:18px;color:var(--mu);font-size:15px}.card li{margin:2px 0}
+.ben{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:860px){.ben{grid-template-columns:1fr}}
+.ben div{border-inline-start:4px solid var(--ac);padding:4px 0 4px 16px}
+.ben h3{margin:0 0 4px;font-size:18px}.ben p{margin:0;color:var(--mu)}
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+@media(max-width:980px){.steps{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.steps{grid-template-columns:1fr}}
+.steps li{list-style:none;counter-increment:s;background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:14px 14px 14px 52px;position:relative;font-size:15px}
+.steps li:before{content:counter(s);position:absolute;left:14px;top:12px;width:28px;height:28px;border-radius:50%;background:var(--ac);color:#fff;font-weight:700;display:grid;place-items:center;font-size:14px}
+.steps b{display:block;margin-bottom:2px}.steps span{color:var(--mu)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.chips button{border:1px solid var(--ln);background:var(--pn);color:var(--ink);font:inherit;font-size:14.5px;padding:7px 14px;border-radius:99px;cursor:pointer}
+.chips button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:980px){.gal{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.gal{grid-template-columns:1fr}}
+.gal figure{margin:0;cursor:zoom-in}.gal figure.hide{display:none}
+.gal .shot{aspect-ratio:16/10}.gal .shot img{height:100%;object-fit:cover;object-position:top left}
+.gal figcaption{font-size:14.5px;color:var(--mu);margin-top:8px}.gal figcaption b{color:var(--ink);display:block}
+.vids{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:980px){.vids{grid-template-columns:1fr}}
+.vid video{width:100%;border-radius:12px;border:1px solid var(--ln);background:#000;aspect-ratio:16/9}
+.vid h3{margin:12px 0 2px;font-size:17px}.vid p{margin:0;color:var(--mu);font-size:15px}
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:980px){.roles{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.roles{grid-template-columns:1fr}}
+.roles div{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:16px}.roles b{display:block;margin-bottom:3px}.roles span{color:var(--mu);font-size:14.5px}
+.mods{display:flex;flex-wrap:wrap;gap:10px}
+.mods span{border:1px solid var(--ln);background:var(--pn);padding:10px 18px;border-radius:10px;font-weight:600}
+.mods span.live{background:var(--ac);color:#fff;border-color:var(--ac)}
+.mods span.soon{opacity:.5;filter:grayscale(1)}
+.auth{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+@media(max-width:900px){.auth{grid-template-columns:1fr}}
+.box{background:var(--pn);border:1px solid var(--ln);border-radius:16px;box-shadow:var(--sh);padding:26px}
+.tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--ln);padding:4px;border-radius:11px;margin-bottom:18px}
+.tabs button{flex:1;border:0;background:none;color:var(--ink);font:inherit;font-weight:600;padding:9px;border-radius:8px;cursor:pointer}
+.tabs button.on{background:var(--ac);color:#fff}
+form label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
+form input,form select{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--ln);border-radius:9px;background:var(--bg);color:var(--ink)}
+form input:focus,form select:focus{outline:2px solid var(--ac);outline-offset:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:520px){.row2{grid-template-columns:1fr}}
+form .btn{width:100%;justify-content:center;margin-top:18px}
+.msg{margin-top:12px;font-size:14.5px;padding:10px 12px;border-radius:9px;display:none}
+.msg.err{display:block;background:#fde8e8;color:#8a1c1c}.msg.ok{display:block;background:var(--soft);color:var(--ac2)}
+@media(prefers-color-scheme:dark){.msg.err{background:#3b1515;color:#ffb4b4}}
+.note{font-size:13.5px;color:var(--mu);margin-top:10px}
+details{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:14px 18px;margin-bottom:10px}
+summary{font-weight:600;cursor:pointer}details p{color:var(--mu);margin:8px 0 0}
+footer{padding:36px 0;border-top:1px solid var(--ln);color:var(--mu);font-size:14.5px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;justify-content:space-between}
+#lb{position:fixed;inset:0;background:rgba(5,12,16,.88);display:none;align-items:center;justify-content:center;z-index:50;padding:24px;cursor:zoom-out}
+#lb img{max-height:92vh;max-width:96vw;border-radius:10px}
+#lb.on{display:flex}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="#top"><img src="/site/icon.png" alt="">Fenestra Site</a>
+  <nav class="m" aria-label="Main">
+    <a class="h" href="#features">Features</a><a class="h" href="#benefits">Benefits</a><a class="h" href="#screens">Screenshots</a><a class="h" href="#videos">Demos</a><a class="h" href="#faq">FAQ</a>
+    <a class="btn o s" href="#access" data-tab="login">Log in</a><a class="btn s" href="#access" data-tab="signup">Sign up</a>
+  </nav>
+</div></header>
+
+<main id="top">
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="kick">Installation module</span>
+    <h1>Run fenestration installation from BOQ to monthly IPA.</h1>
+    <p class="lead">Plan from the BOQ and P6, delegate to site, clock teams in by QR, inspect with WIR and MIR, issue numbered letters, claim payment, and recognise the best performers every month. One system, one record.</p>
+    <div class="cta"><a class="btn" href="#access" data-tab="login">Log in</a><a class="btn o" href="#access" data-tab="signup">Request an account</a><a class="btn o" href="#videos">&#9654; Watch the demos</a></div>
+    <div class="facts"><span><b>8 roles</b> from management to main contractor</span><span><b>Phone, tablet, PC</b> and installable like an app</span><span><b>8 languages</b> including Arabic and Urdu</span></div>
+  </div>
+  <div class="shot"><img src="/site/shot-dash.jpg" alt="Fenestra Site dashboard with manhour forecast and operational budget" width="1400" height="860"></div>
+</div></section>
+
+<section id="features"><div class="wrap">
+  <h2>Everything the installation team needs</h2>
+  <p class="sub">Built around how a fenestration project actually runs, with the checks and records your main contractor expects.</p>
+  <div class="grid g3">
+    <div class="card"><div class="ic">&#128230;</div><h3>BOQ and P6 planning</h3><p>Upload the BOQ from Excel, split lines into buildings, levels and elevations, and turn a scope-level P6 programme into a detailed, resourced schedule. Export back to P6 (.xer).</p></div>
+    <div class="card"><div class="ic">&#9201;</div><h3>Realistic schedules</h3><p>Durations and crews follow standard productivity and the working day left after rest, lunch and prayer breaks you set. Gantt, baseline, lean planner and forecast finish.</p></div>
+    <div class="card"><div class="ic">&#128202;</div><h3>Manhour and resource forecast</h3><p>Forecast at completion, weekly workers needed, and an operational budget set to the lower of estimate and forecast. Management and the estimation manager are alerted when the forecast exceeds the budget.</p></div>
+    <div class="card"><div class="ic">&#128228;</div><h3>Delegation with alarms</h3><p>Pre-start checklists, look-ahead at 30, 7 and 1 day, and task invitations. If the project manager has not delegated within 24 hours, management and the planner are alarmed; unassigned tasks are reported daily.</p></div>
+    <div class="card"><div class="ic">&#129521;</div><h3>QR clock-in with location</h3><p>Workers scan QR badges to clock in; the day's log clocks the team out. Every scan records the location and alerts the project manager when it is away from site.</p></div>
+    <div class="card"><div class="ic">&#9989;</div><h3>QA/QC: WIR, MIR and SOR</h3><p>Inspection checklists with photos and signatures, WIR packages to the main contractor, material inspection requests, and an automatic site observation report when material is rejected.</p></div>
+    <div class="card"><div class="ic">&#128193;</div><h3>Numbered letters and forms</h3><p>Serial numbering with your own patterns and start numbers, a register with stored copies, and your own Word, Excel or PDF formats filled automatically. Download as a report, a ZIP or one PDF.</p></div>
+    <div class="card"><div class="ic">&#128176;</div><h3>IPA, variations and delay claims</h3><p>Monthly IPA built from approved MIR, WIR and snag approvals, instructions priced into variations, and FIDIC-based delay reports and extension of time letters. Commercial items stay with management and the project manager.</p></div>
+    <div class="card"><div class="ic">&#127942;</div><h3>Monthly KPIs and certificates</h3><p>Scorecards and ranking for the project manager, site engineers, QA/QC engineers and team leaders. Management reviews, approves officially and issues numbered certificates of recognition.</p></div>
+  </div>
+  <h2 style="margin-top:56px">Common tabs on every page</h2>
+  <p class="sub">Always one tap away in the footer, whichever module you are in.</p>
+  <div class="grid g4">
+    <div class="card"><h3>&#9989; Tasks</h3><p>One list of everything waiting for you, most urgent first.</p></div>
+    <div class="card"><h3>&#128229; Inbox</h3><p>Every notification with unread marks and filters.</p></div>
+    <div class="card"><h3>&#128197; Calendar</h3><p>Starts, deliveries, inspections, IPA dates, reviews. Download .ics.</p></div>
+    <div class="card"><h3>&#128199; Contacts</h3><p>Project contacts and team with call, email and WhatsApp links.</p></div>
+    <div class="card"><h3>&#128218; Library</h3><p>Drawings and specifications, shared with the contractor on demand.</p></div>
+    <div class="card"><h3>&#128737; Audit trail</h3><p>Who signed in, changed users, downloaded backups and approved.</p></div>
+    <div class="card"><h3>&#128101; Users and access</h3><p>Manage logins and see which tabs each role can open.</p></div>
+    <div class="card"><h3>&#127891; Help and training</h3><p>Searchable guides and a quick-start checklist for your role.</p></div>
+  </div>
+</div></section>
+
+<section class="alt" id="how"><div class="wrap">
+  <h2>From BOQ to payment in ten steps</h2>
+  <p class="sub">The same order your project follows, with the right person alerted at each step.</p>
+  <ol class="steps" style="padding:0;margin:0">
+    <li><b>Upload BOQ and P6</b><span>Planner or project manager</span></li>
+    <li><b>Split into sub-items</b><span>Building, level, elevation</span></li>
+    <li><b>Build the schedule</b><span>Productivity and off-times</span></li>
+    <li><b>Delegate with checklist</b><span>Alarms if late</span></li>
+    <li><b>Site engineer accepts</b><span>Or reverts with reasons</span></li>
+    <li><b>Teams scan and log</b><span>QR clock-in, daily results</span></li>
+    <li><b>Materials and MIR</b><span>QA/QC, SOR if rejected</span></li>
+    <li><b>Completion and WIR</b><span>Grouped and sent</span></li>
+    <li><b>Instructions and records</b><span>Variations, snags, requests</span></li>
+    <li><b>Reports and IPA</b><span>Claims and monthly KPIs</span></li>
+  </ol>
+</div></section>
+
+<section id="benefits"><div class="wrap">
+  <h2>What you gain</h2>
+  <p class="sub">Less chasing, fewer disputes, and a record you can rely on.</p>
+  <div class="ben">
+    <div><h3>Fewer delays reaching site</h3><p>Nothing is released until the checklist is met, and late delegation is escalated automatically instead of being discovered on the day.</p></div>
+    <div><h3>Payment you can substantiate</h3><p>IPA follows approved MIR, WIR and snag items up to the cut-off day, so every claimed quantity has an inspection behind it.</p></div>
+    <div><h3>Claims with evidence</h3><p>Obstructions, instructions and carried-over work are logged with date and time, feeding FIDIC delay reports and extension of time letters.</p></div>
+    <div><h3>One source of truth</h3><p>One database, shared by everyone on the project, with every action logged against a name and time.</p></div>
+    <div><h3>Budget control early</h3><p>The forecast is compared with the estimate while there is still time to act, and the project manager works to the lower figure.</p></div>
+    <div><h3>Motivated teams</h3><p>Transparent monthly KPIs and ranking, official management review, and certificates of recognition for the best performers.</p></div>
+    <div><h3>Your forms, your numbers</h3><p>Letters and forms keep the format and numbering your company and main contractor already use.</p></div>
+    <div><h3>Works where the site is</h3><p>Installable on phones and tablets, in your language, with data stored in a single SQLite file you can back up and own.</p></div>
+    <div><h3>The right people see the right things</h3><p>Role-based tabs, commercial values and claim letters restricted to management and the project manager, and a full audit trail.</p></div>
+  </div>
+</div></section>
+
+<section class="alt" id="screens"><div class="wrap">
+  <h2>See it in use</h2>
+  <p class="sub">Screenshots from the application. Click any picture to enlarge.</p>
+  <div class="chips" role="tablist" aria-label="Filter screenshots">
+    <button class="on" data-f="all">All</button><button data-f="plan">Planning</button><button data-f="site">Site and QA/QC</button><button data-f="com">Documents and commercial</button><button data-f="team">Team and admin</button>
+  </div>
+  <div class="gal" id="gal">
+    <figure data-g="plan"><div class="shot"><img loading="lazy" src="/site/shot-dash.jpg" alt="Dashboard"></div><figcaption><b>Dashboard and forecast</b>Estimate, forecast, operational budget and workers needed each week.</figcaption></figure>
+    <figure data-g="plan"><div class="shot"><img loading="lazy" src="/site/shot-boq.jpg" alt="BOQ"></div><figcaption><b>BOQ tree</b>Live progress and WIR-approved percentage for every sub-item.</figcaption></figure>
+    <figure data-g="plan"><div class="shot"><img loading="lazy" src="/site/shot-schedule.jpg" alt="Schedule"></div><figcaption><b>Schedule</b>Start, duration and finish from standard productivity.</figcaption></figure>
+    <figure data-g="plan"><div class="shot"><img loading="lazy" src="/site/shot-delegate.jpg" alt="Delegate resources"></div><figcaption><b>Delegate resources</b>Pre-start checklist for every task.</figcaption></figure>
+    <figure data-g="plan"><div class="shot"><img loading="lazy" src="/site/shot-set_off.jpg" alt="Off-times setup"></div><figcaption><b>Off-times and alarms</b>Breaks come out of the working day; delegation alarms and scan location are set here.</figcaption></figure>
+    <figure data-g="site"><div class="shot"><img loading="lazy" src="/site/shot-site.jpg" alt="Site tab"></div><figcaption><b>Site</b>Invitations, to-do list and today's tasks.</figcaption></figure>
+    <figure data-g="site"><div class="shot"><img loading="lazy" src="/site/shot-wir.jpg" alt="WIR log"></div><figcaption><b>WIR log</b>Inspections, approvals and packages to the main contractor.</figcaption></figure>
+    <figure data-g="site"><div class="shot"><img loading="lazy" src="/site/shot-materials.jpg" alt="Materials"></div><figcaption><b>Materials</b>Deliveries, checklist, cutting list and MIR.</figcaption></figure>
+    <figure data-g="site"><div class="shot"><img loading="lazy" src="/site/shot-sor.jpg" alt="Rejected materials SOR"></div><figcaption><b>Rejected materials</b>Site observation report raised automatically from a rejected MIR.</figcaption></figure>
+    <figure data-g="com"><div class="shot"><img loading="lazy" src="/site/shot-docs.jpg" alt="Document register"></div><figcaption><b>Document register</b>Serial-numbered letters and forms with stored copies.</figcaption></figure>
+    <figure data-g="com"><div class="shot"><img loading="lazy" src="/site/shot-ipa.jpg" alt="Rates and IPA"></div><figcaption><b>Rates and IPA</b>Monthly payment application from approved items.</figcaption></figure>
+    <figure data-g="team"><div class="shot"><img loading="lazy" src="/site/shot-kpi.jpg" alt="KPI scorecard"></div><figcaption><b>KPI scorecard</b>Monthly ranking with each KPI against its target.</figcaption></figure>
+    <figure data-g="team"><div class="shot"><img loading="lazy" src="/site/shot-kpi_cert.jpg" alt="Certificates of recognition"></div><figcaption><b>Certificates of recognition</b>Approved or withheld by management, numbered and filed.</figcaption></figure>
+    <figure data-g="team"><div class="shot"><img loading="lazy" src="/site/shot-set_kpi.jpg" alt="KPI targets"></div><figcaption><b>KPI targets and weights</b>Management sets targets, weights and the certificate threshold.</figcaption></figure>
+    <figure data-g="team"><div class="shot"><img loading="lazy" src="/site/shot-tasks.jpg" alt="Tasks"></div><figcaption><b>Tasks and actions</b>Everything waiting for you, overdue first.</figcaption></figure>
+    <figure data-g="team"><div class="shot"><img loading="lazy" src="/site/shot-cal.jpg" alt="Calendar"></div><figcaption><b>Calendar</b>Starts, deliveries, inspections and review dates.</figcaption></figure>
+    <figure data-g="team"><div class="shot"><img loading="lazy" src="/site/shot-lib.jpg" alt="Library"></div><figcaption><b>Library</b>Project files with revision and optional sharing.</figcaption></figure>
+    <figure data-g="team"><div class="shot"><img loading="lazy" src="/site/shot-usr.jpg" alt="Users and access"></div><figcaption><b>Users and access</b>Logins and the role-by-tab access matrix.</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="videos"><div class="wrap">
+  <h2>Demonstration videos</h2>
+  <p class="sub">Three short walk-throughs recorded in the application. They play without sound; captions describe each step.</p>
+  <div class="vids">
+    <div class="vid"><video controls preload="none" poster="/site/poster-plan.jpg" playsinline><source src="/site/demo-plan.mp4" type="video/mp4"></video><h3>1. Plan and delegate</h3><p>Dashboard, BOQ, schedule, Gantt, delegation and tasks. About 35 seconds.</p></div>
+    <div class="vid"><video controls preload="none" poster="/site/poster-site.jpg" playsinline><source src="/site/demo-site.mp4" type="video/mp4"></video><h3>2. Site, quality and documents</h3><p>Site tasks, WIR, SOR, the document register and setup. About 30 seconds.</p></div>
+    <div class="vid"><video controls preload="none" poster="/site/poster-kpi.jpg" playsinline><source src="/site/demo-kpi.mp4" type="video/mp4"></video><h3>3. KPIs, certificates and control</h3><p>Ranking, certificates, calendar, inbox, library, audit and users. About 30 seconds.</p></div>
+  </div>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <h2>Made for every role on the project</h2>
+  <p class="sub">Each person gets the tabs they need and nothing more.</p>
+  <div class="roles">
+    <div><b>Management</b><span>Budget, approvals, KPI review, certificates, users, audit.</span></div>
+    <div><b>Project manager</b><span>Delegation, checklists, IPA, claims, instructions.</span></div>
+    <div><b>Planning engineer</b><span>BOQ, P6, schedule, Gantt, baseline, lean planning.</span></div>
+    <div><b>Site engineer</b><span>Accept tasks, daily logs, materials, WIR requests.</span></div>
+    <div><b>Quality engineer</b><span>WIR, MIR, snagging, rejected materials.</span></div>
+    <div><b>HSE officer</b><span>Permits, toolbox talks, incidents, danger notices.</span></div>
+    <div><b>Main contractor</b><span>Read-only progress, shared files, and the letters sent to them.</span></div>
+    <div><b>Production department</b><span>Material requests and rejected-material returns.</span></div>
+  </div>
+  <h2 style="margin-top:50px">Modules</h2>
+  <p class="sub">The Installation module is live. The other modules are planned and appear greyed out in the header until they are built.</p>
+  <div class="mods"><span class="live">Installation</span><span class="soon">Logistics</span><span class="soon">Production</span><span class="soon">Materials</span><span class="soon">Engineering</span></div>
+</div></section>
+
+<section id="access"><div class="wrap auth">
+  <div>
+    <h2>Log in or request an account</h2>
+    <p class="sub">Existing users sign in with the user name and password issued to them. New staff can request an account; Management approves it and confirms your role before you can sign in.</p>
+    <ul style="color:var(--mu);padding-left:20px">
+      <li>Passwords are stored as salted hashes, and repeated wrong attempts lock the account for a short time.</li>
+      <li>Every action is logged with your name and the time.</li>
+      <li>First sign-in with a temporary password asks you to choose your own.</li>
+    </ul>
+    <p class="note">Main contractor and production department accounts are created by Management.</p>
+  </div>
+  <div class="box">
+    <div class="tabs" role="tablist"><button id="tl" class="on" role="tab" aria-selected="true" onclick="tab('login')">Log in</button><button id="ts" role="tab" aria-selected="false" onclick="tab('signup')">Sign up</button></div>
+    <form id="fl" onsubmit="return doLogin(event)">
+      <label for="lu">User name</label><input id="lu" autocomplete="username" required>
+      <label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password" required>
+      <button class="btn" id="lb2" type="submit">Log in</button>
+      <div class="msg" id="lm" role="alert"></div>
+    </form>
+    <form id="fs" onsubmit="return doSignup(event)" style="display:none">
+      <div class="row2"><div><label for="sn">Full name</label><input id="sn" autocomplete="name" required maxlength="80"></div><div><label for="su">User name</label><input id="su" autocomplete="username" required pattern="[A-Za-z0-9_.\-]{3,30}" title="3 to 30 letters, numbers, dot, dash or underscore"></div></div>
+      <div class="row2"><div><label for="se">Email</label><input id="se" type="email" autocomplete="email" required></div><div><label for="sp">Phone (optional)</label><input id="sp" type="tel" autocomplete="tel" maxlength="30"></div></div>
+      <label for="sr">Role you need</label>
+      <select id="sr"><option>Project manager</option><option>Planning engineer</option><option selected>Site engineer</option><option>Quality engineer</option><option>HSE officer</option></select>
+      <label for="sw">Password (8 or more characters)</label><input id="sw" type="password" minlength="8" autocomplete="new-password" required>
+      <button class="btn" id="sb" type="submit">Request account</button>
+      <div class="msg" id="sm" role="alert"></div>
+      <p class="note">Your request waits for approval by Management. You will be able to sign in once it is approved.</p>
+    </form>
+  </div>
+</div></section>
+
+<section class="alt" id="faq"><div class="wrap" style="max-width:860px">
+  <h2>Questions</h2>
+  <details><summary>Where is my data stored?</summary><p>In a single SQLite database on your own server (or the host you choose). Management can download a backup that contains the database and a plain SQL dump, and a daily backup is made automatically.</p></details>
+  <details><summary>Can I keep my own letter and form layouts?</summary><p>Yes. Upload a Word, Excel or PDF format for each document type and the app fills it. You also choose the numbering pattern and start number for each type.</p></details>
+  <details><summary>Does it send emails and WhatsApp messages?</summary><p>Yes, when your administrator configures email (SMTP) or WhatsApp. Alarms such as late delegation are checked by the server every 10 minutes, even when nobody is logged in.</p></details>
+  <details><summary>Does location tracking need special setup?</summary><p>Scan locations need the app to be served over https and the team leader to allow location access. You set the site position and the allowed distance in Setup.</p></details>
+  <details><summary>Which languages and devices are supported?</summary><p>English, Arabic, Hindi, Urdu, Filipino, Bengali, Tamil and Chinese, with PC, tablet and phone layouts. It can be installed on a phone like an app.</p></details>
+  <details><summary>When will the other modules be available?</summary><p>Logistics, Production, Materials and Engineering are planned. Their tabs are shown greyed out in the header and become active as each module is released.</p></details>
+</div></section>
+</main>
+
+<footer><div class="wrap"><span><b>Fenestra Site</b> &middot; Installation module &middot; &copy; 2026 Charles Couteau. All rights reserved. Proprietary software.</span><span><a href="#access" data-tab="login">Log in</a> &middot; <a href="#access" data-tab="signup">Sign up</a> &middot; <a href="#videos">Demos</a></span></div></footer>
+<div id="lb" role="dialog" aria-label="Screenshot" onclick="this.classList.remove('on')"><img alt=""></div>
+
+<script>
+function tab(w){var l=w!="signup";document.getElementById("fl").style.display=l?"":"none";document.getElementById("fs").style.display=l?"none":"";
+  var a=document.getElementById("tl"),b=document.getElementById("ts");a.classList.toggle("on",l);b.classList.toggle("on",!l);a.setAttribute("aria-selected",l);b.setAttribute("aria-selected",!l)}
+document.querySelectorAll("[data-tab]").forEach(function(a){a.addEventListener("click",function(){tab(a.getAttribute("data-tab"));setTimeout(function(){var i=document.getElementById(a.getAttribute("data-tab")=="signup"?"sn":"lu");if(i)i.focus({preventScroll:true})},400)})});
+if(location.hash=="#signup")tab("signup");
+function show(id,t,cls){var m=document.getElementById(id);m.className="msg "+cls;m.textContent=t}
+async function post(url,body){var r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});var j={};try{j=await r.json()}catch(x){}return{ok:r.ok,j:j}}
+async function doLogin(e){e.preventDefault();var b=document.getElementById("lb2");b.disabled=true;show("lm","Signing in...","ok");
+  try{var r=await post("/api/login",{u:document.getElementById("lu").value.trim(),p:document.getElementById("lp").value});
+    if(r.ok&&r.j.token){try{sessionStorage.setItem("fx-tok",r.j.token)}catch(x){}location.href="/";return false}
+    show("lm",r.j.error||"Wrong user name or password.","err")}catch(x){show("lm","The server could not be reached. Try again.","err")}
+  b.disabled=false;return false}
+async function doSignup(e){e.preventDefault();var b=document.getElementById("sb");b.disabled=true;show("sm","Sending your request...","ok");
+  try{var r=await post("/api/signup",{name:document.getElementById("sn").value.trim(),u:document.getElementById("su").value.trim(),email:document.getElementById("se").value.trim(),phone:document.getElementById("sp").value.trim(),role:document.getElementById("sr").value,password:document.getElementById("sw").value});
+    if(r.ok){show("sm","Request sent. Management will approve it and confirm your role; then you can sign in.","ok");document.getElementById("fs").reset();b.disabled=false;return false}
+    show("sm",r.j.error||"The request could not be sent.","err")}catch(x){show("sm","The server could not be reached. Try again.","err")}
+  b.disabled=false;return false}
+document.querySelectorAll(".chips button").forEach(function(c){c.addEventListener("click",function(){document.querySelectorAll(".chips button").forEach(function(x){x.classList.remove("on")});c.classList.add("on");var f=c.getAttribute("data-f");document.querySelectorAll("#gal figure").forEach(function(g){g.classList.toggle("hide",f!="all"&&g.getAttribute("data-g")!=f)})})});
+document.querySelectorAll("#gal figure").forEach(function(g){g.addEventListener("click",function(){var i=g.querySelector("img"),l=document.getElementById("lb");l.querySelector("img").src=i.src;l.querySelector("img").alt=i.alt;l.classList.add("on")})});
+document.addEventListener("keydown",function(e){if(e.key=="Escape")document.getElementById("lb").classList.remove("on")});
+</script>
+</body>
+</html>

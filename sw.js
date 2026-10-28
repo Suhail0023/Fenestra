@@ -1,4 +1,4 @@
-const C="fenestra-v10",SHELL=["/","/manifest.webmanifest","/icon-192.png","/icon-512.png"],CDN=["https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.0.3/qrcode.min.js","https://cdn.jsdelivr.net/npm/jsqr@1.1.1/dist/jsQR.min.js","https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"];
+const C="fenestra-v21",SHELL=["/","/manifest.webmanifest","/icon-192.png","/icon-512.png"],CDN=["https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.0.3/qrcode.min.js","https://cdn.jsdelivr.net/npm/jsqr@1.1.1/dist/jsQR.min.js","https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(async c=>{await c.addAll(SHELL).catch(()=>{});for(const u of CDN){try{await c.add(new Request(u,{mode:"no-cors"}))}catch(x){}}}).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!=C).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{const r=e.request,u=new URL(r.url);if(r.method!="GET")return;if(u.origin==location.origin&&(u.pathname.startsWith("/api/")))return;
