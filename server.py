@@ -339,6 +339,13 @@ def users():
         save_json(USERS_FILE, u)
         try: open(mk, "w").write("1")
         except OSError: pass
+    # super administrator (Management role = every module, user admin, delete project): created once from SUPERADMIN_USER / SUPERADMIN_PASSWORD.
+    sp = os.environ.get("SUPERADMIN_PASSWORD", "")
+    if sp and len(sp) >= 8:
+        sn = (os.environ.get("SUPERADMIN_USER") or "superadmin").strip()
+        if not any(x["u"].lower() == sn.lower() for x in u):
+            sa, h = hash_pw(sp); u.append({"u": sn, "name": "Super admin", "role": "Management", "email": "", "phone": "", "salt": sa, "hash": h, "must": False, "super": True})
+            save_json(USERS_FILE, u)
     return u
 def pub(u): return {k: u.get(k, "") for k in ("u", "name", "role", "email", "phone")} | {"must": bool(u.get("must")), "status": u.get("status", "active")}
 KNOWN_ROLES = [r for _, _, r in ROLE_DEFAULTS]
@@ -688,6 +695,8 @@ class H(BaseHTTPRequestHandler):
                     x = next((y for y in us if y["u"] == un), None)
                     if not x: s.out(404, '{"error":"no such user"}'); return
                     mgrs = [y for y in us if y["role"] == "Management"]
+                    if x.get("super") and op in ("del", "reject"): s.out(400, '{"error":"the super admin cannot be removed"}'); return
+                    if x.get("super") and op == "set" and B.get("role", x["role"]) != "Management": s.out(400, '{"error":"the super admin stays Management"}'); return
                     if op == "del":
                         if x["role"] == "Management" and len(mgrs) < 2: s.out(400, '{"error":"keep at least one Management user"}'); return
                         us.remove(x)
