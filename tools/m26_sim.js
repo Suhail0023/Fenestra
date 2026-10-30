@@ -119,7 +119,7 @@ function simDay(d){
  /* resubmit rejected WIRs two days after the rejection */
  S.insp.filter(x=>x.s=="Rejected"&&!x.rs&&x.dd&&diff(x.dd,d)>=2).forEach(x=>{x.rs=1;S.insp.push({no:"WIR-"+String(S.insp.length+1).padStart(3,"0"),tid:x.tid,n:x.n,qty:x.qty,s:"Pending",c:x.c,d,dt:"15:00",dd:"",by:"",note:"",ph:[]})});
  /* monthly IPA: auto-prepared by the app on the cut-off, issued by the project manager */
- try{simScen(d);simSubSync()}catch(e2){console.log('simScen',e2)}
+ try{simScen(d);simSubSync();simExtra(d)}catch(e2){console.log('simScen',e2)}
  try{ipaAuto()}catch(e1){}
  S.ipas.forEach(x=>{if(x.st=="Draft"&&d>=x.iss){x.st="Issued";x.by="Sara Mansoor";x.id=d;x.mail=false;x.body="";S.ev.push({d,tm:"09:00",id:0,n:x.no,ev:"IPA issued",by:"Project manager",note:"AED "+Math.round(x.net).toLocaleString(),u:"Sara Mansoor"})}});
  return any}
@@ -160,6 +160,22 @@ function simDrawing(){if(S.pe.dwg.some(x=>x.sim))return;S.pe.dwg.push({id:Date.n
 function simXerDownload(status){const a=simActs(status),t=simXer(a,"6BR Villa, Umm Fannain, Sharjah");const bl=new Blob([t],{type:"text/plain"}),u=URL.createObjectURL(bl),x=document.createElement("a");x.href=u;x.download="VILLA6BR_"+(status?"Status_"+T:"Baseline_Rev0")+".xer";x.click()}
 window.simXerDownload=simXerDownload;
 
+
+/* ---------- procurement items, RFIs, tools deliveries ---------- */
+function simProc(d){if(!S.pm||!S.pm.it)return;const P=S.sim.pk,tags=[...new Set(Object.values(P).map(k=>k.tag))],V={CW:"Gulf Extrusions LLC",SD:"Gulf Extrusions LLC",LV:"Al Noor Metals",BL:"Emirates Glass Trading"};
+ tags.forEach(t=>{const ids=Object.keys(P).filter(i=>P[i].tag==t).map(Number),k=P[ids[0]],key="sim"+t;let it=S.pm.it.find(x=>x.src==key);
+  if(!it){const ls=t=="BL"?[{item:"Toughened glass 12 mm",uom:"m2",qty:60},{item:"SS 316 handrail and fittings",uom:"m",qty:120}]:[{item:"Aluminium profiles (powder coated)",uom:"kg",qty:t=="CW"?5200:2400},{item:t=="CW"?"Glass units 6+12+6":"Glass 10 mm tempered",uom:"m2",qty:t=="CW"?210:90},{item:"Gaskets, silicone and accessories",uom:"set",qty:1}];
+   it=Object.assign({id:++S.pm.n,rel:SIM_START,st:"po",store:{ded:{},done:true},pr:{off:"",dd:SIM_START,s:SIM_START,e:add(SIM_START,3),no:"PR-"+t},po:{off:"",dd:add(SIM_START,3),s:add(SIM_START,3),e:add(SIM_START,5),no:"PO-"+VILLA_PLAN[t].nm.slice(0,3).toUpperCase()+"-01",vendor:V[t],eta:k.mat.p,etaOK:true,eh:[]},log:[{d:SIM_START,t:"Purchase order placed with "+V[t],by:"Procurement manager"}]},{src:key,ty:"MTO",no:"MTO-"+t+"-01",title:"Materials - "+VILLA_PLAN[t].nm,boq:"",ids:ids,cl:"",dv:"",lines:ls});S.pm.it.push(it)}
+  if(k.mat.a&&!S.pm.arr.some(a=>a.it==it.id)){const late=diff(k.mat.p,k.mat.a);it.log.push({d:k.mat.a,t:"Delivered to site"+(late>0?", "+late+" day(s) after the PO date":""),by:"Store keeper"});
+   it.lines.forEach((l,li)=>S.pm.arr.push({id:++S.pm.n,no:"ARR-"+String(S.pm.arr.length+1).padStart(3,"0"),it:it.id,li,q:l.qty,dest:"Site store",d:k.mat.a,vref:"DN-"+(S.pm.n),by:"Store keeper",st:"Accepted"}))}})}
+function simExtra(d){const n=diff(SIM_START,d),sm=S.sim,once=k=>{if(sm.wx["sx|"+k])return false;sm.wx["sx|"+k]=1;return true};
+ try{simProc(d)}catch(e){console.log("simProc",e)}
+ if(n>=18&&once("tl")&&S.tl)S.tl.dl.push({id:Date.now()%1e9,d,tm:"08:00",tool:"Glass suction cups (2-cup)",qty:6,dn:"TD-1",sup:"Site stores",cond:"Good",by:"Site logistics"});
+ if(n>=18&&once("tl2")&&S.tl)S.tl.dl.push({id:Date.now()%1e9+1,d,tm:"08:10",tool:"Rivet gun and drill set",qty:4,dn:"TD-2",sup:"Site stores",cond:"Good",by:"Site logistics"});
+ if(n>=22&&once("rfi1")&&S.eng&&S.eng.rfi){const k=S.eng.rfiN++;S.eng.rfi.push({id:k,no:"RFI-"+String(k).padStart(3,"0"),subject:"Roof louver screen: support steel not shown",q:"The roof louver screen fixing to the MEP platform needs a steel support. Please confirm the detail and who supplies it.",ref:"A-402",by:"Raj Patel",byId:0,d,due:add(d,3),manual:true,st:"Open"});simLog(d,"RFI raised: roof louver screen support steel","eng")}
+ if(n>=27&&once("rfi2")&&S.eng&&S.eng.rfi){const r=S.eng.rfi[0];if(r){r.st="Closed";r.rd=d;r.ans="Support steel by the main contractor, detail A-402 rev B issued."}}
+}
+
 /* ---------- scheduled scenarios: every site event the app handles ---------- */
 function simScen(d){
  const sm=S.sim,L=leaves(),n=diff(SIM_START,d),once=k=>{if(sm.wx["sc|"+k])return false;sm.wx["sc|"+k]=1;return true};
@@ -183,7 +199,7 @@ function simAdvance(n,quiet){n=Math.max(1,Math.round(n||1));window.SIMQ=true;try
 async function simCreate(){if(!["Management","Project manager"].includes(role)){alert("Management or the project manager creates the demonstration project.");return}
  if(PL.some(x=>x.code==SIM_CODE)&&!confirm("The project "+SIM_CODE+" already exists. Rebuild it from the start? Its data will be replaced.")){return}
  const b=simStateVilla(S);let ok=false;
- if(API){const r=await api("/api/project",{method:"POST",body:JSON.stringify({code:SIM_CODE,name:b.proj.name,state:b})});if(!r.ok&&!PL.some(x=>x.code==SIM_CODE)){alert((await r.json()).error||"Could not create the project");return}try{PL=await r.json()}catch(x){}}
+ if(API){const r=await api("/api/project",{method:"POST",body:JSON.stringify({code:SIM_CODE,name:b.proj.name,state:b})});if(!r.ok&&!PL.some(x=>x.code==SIM_CODE)){alert((await r.json()).error||"Could not create the project");return}try{if(r.ok){const q=await r.json();if(Array.isArray(q))PL=q}}catch(x){}}
  else{if(!PL.some(x=>x.code==SIM_CODE))PL.push({code:SIM_CODE,name:b.proj.name});try{localStorage.setItem("fx-projs",JSON.stringify(PL));localStorage.setItem(KEY+"-"+SIM_CODE,JSON.stringify(b))}catch(x){}}
  PC=SIM_CODE;try{localStorage.setItem("fx-pc",PC)}catch(x){}S=b;fixS();last="";simLoadP6();simDrawing();simSubmittals();simAdvance(30,true);try{S.eng&&0}catch(x){}save();view="dash";R();toast("Demonstration project ready: "+SIM_CODE+", simulated to "+fd(T))}
 window.simCreate=simCreate;
