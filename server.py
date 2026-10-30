@@ -41,7 +41,7 @@ TABLES = {
  "Variations": ("vars", ["id","no","d","desc","bid","dq","val","s","note","wir"]),
  "Costs": ("costs", ["id","d","bid","type","amt","note"]),
  "Drawings": ("draws", ["id","name","url"])}
-CONFIG_KEYS = ["proj", "base", "baseH", "xl", "wirTpl", "contacts", "fin", "diary", "pp", "pts", "awd", "lean", "fid", "sp", "dp", "mh", "vo", "ipa", "ipas", "mt", "tl", "sir", "wp", "cfg", "sigs", "roll", "fca", "la", "wh", "warn", "hrStart", "tc", "dg", "lgt", "rw", "rwStart", "dlg", "geo", "kpi", "kpir", "kpic", "onb", "eng", "pe"]
+CONFIG_KEYS = ["proj", "base", "baseH", "xl", "wirTpl", "contacts", "fin", "diary", "pp", "pts", "awd", "lean", "fid", "sp", "dp", "mh", "vo", "ipa", "ipas", "mt", "tl", "sir", "wp", "cfg", "sigs", "roll", "fca", "la", "wh", "warn", "hrStart", "tc", "dg", "lgt", "rw", "rwStart", "dlg", "geo", "kpi", "kpir", "kpic", "onb", "eng", "pe", "sim"]
 INTS = ("id","p","seq","dur","i","t","tid","dw","rid","bid")
 LISTF = {"insp": ("c", "cr", "ph"), "obs": ("ph",), "snags": ("ph",), "inc": ("ph",), "reqs": ("items",)}
 DB_FILE = os.path.join(BASE, "fenestra.db")
