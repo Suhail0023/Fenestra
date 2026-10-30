@@ -119,7 +119,7 @@ function simDay(d){
  /* resubmit rejected WIRs two days after the rejection */
  S.insp.filter(x=>x.s=="Rejected"&&!x.rs&&x.dd&&diff(x.dd,d)>=2).forEach(x=>{x.rs=1;S.insp.push({no:"WIR-"+String(S.insp.length+1).padStart(3,"0"),tid:x.tid,n:x.n,qty:x.qty,s:"Pending",c:x.c,d,dt:"15:00",dd:"",by:"",note:"",ph:[]})});
  /* monthly IPA: auto-prepared by the app on the cut-off, issued by the project manager */
- try{simScen(d);simSubSync();simExtra(d)}catch(e2){console.log('simScen',e2)}
+ try{simScen(d);simSubSync();simExtra(d);if(typeof simMore=='function')simMore(d)}catch(e2){console.log('simScen',e2)}
  try{ipaAuto()}catch(e1){}
  S.ipas.forEach(x=>{if(x.st=="Draft"&&d>=x.iss){x.st="Issued";x.by="Sara Mansoor";x.id=d;x.mail=false;x.body="";S.ev.push({d,tm:"09:00",id:0,n:x.no,ev:"IPA issued",by:"Project manager",note:"AED "+Math.round(x.net).toLocaleString(),u:"Sara Mansoor"})}});
  return any}
