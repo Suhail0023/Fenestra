@@ -128,7 +128,7 @@ def read_state(p="LR001"):
         S["ack"] = {str(k): bool(v) for k, v in c.execute("SELECT flag_key, done FROM flags_ack WHERE project=?", (p,))}
         S["todo"] = [r[0] for r in c.execute("SELECT text FROM todo WHERE project=? ORDER BY id", (p,))]
         for k, v in c.execute("SELECT key, value FROM config WHERE project=?", (p,)):
-            if k in CONFIG_KEYS:
+            if k not in _SPECIAL and k not in {t[0] for t in TABLES.values()}:
                 try: S[k] = json.loads(v)
                 except Exception: pass
         return S
@@ -141,6 +141,13 @@ def _enc(v, col, meta):
         meta["j"].append(col); return json.dumps(v, ensure_ascii=False)
     return v
 
+_SPECIAL = {"n", "ratio", "teams", "chk", "chkItems", "ack", "todo"}
+def _persist_keys(S):
+    """Every top-level key of the state is stored: the listed ones, plus any module key added later (P6 baseline, materials, production ...), so nothing is dropped on save."""
+    tk = {v[0] for v in TABLES.values()}
+    ks = [k for k in CONFIG_KEYS if S.get(k) is not None]
+    ks += [k for k in S if k not in CONFIG_KEYS and k not in tk and k not in _SPECIAL and S.get(k) is not None and not str(k).startswith("_")]
+    return ks
 def write_state(S, p="LR001"):
     p = code_of(p); c = connect()
     try:
@@ -165,7 +172,7 @@ def write_state(S, p="LR001"):
             c.execute("DELETE FROM todo WHERE project=?", (p,))
             c.executemany("INSERT INTO todo (project, text) VALUES (?, ?)", [(p, t_) for t_ in S.get("todo", [])])
             c.execute("DELETE FROM config WHERE project=?", (p,))
-            c.executemany("INSERT INTO config (project, key, value) VALUES (?, ?, ?)", [(p, k, json.dumps(S[k], ensure_ascii=False)) for k in CONFIG_KEYS if S.get(k) is not None])
+            c.executemany("INSERT INTO config (project, key, value) VALUES (?, ?, ?)", [(p, k, json.dumps(S[k], ensure_ascii=False)) for k in _persist_keys(S)])
     finally: c.close()
 
 def get_tree():
@@ -1055,6 +1062,12 @@ if __name__ == "__main__":
     users(); init_db(); migrate_legacy()
     docs.init(DB_FILE, company, project_name, logo_path)
     if not project_exists("LR001") and os.path.exists(os.path.join(APP, "seed_state.json")): write_state(json.load(open(os.path.join(APP, "seed_state.json"))), "LR001")
+    # demonstration project: restored only when it is missing and was not deleted on purpose; never overwrites existing data
+    try:
+        _dp = os.path.join(APP, "demo_VILLA6BR.json")
+        if os.path.exists(_dp) and not project_exists("VILLA6BR") and not tombstoned("VILLA6BR"):
+            _st = json.load(open(_dp)); _st.setdefault("proj", {"code": "VILLA6BR", "name": "6BR Villa, Umm Fannain, Sharjah"}); write_state(_st, "VILLA6BR"); print("Demonstration project VILLA6BR restored")
+    except Exception as _e: print("demo seed skipped:", _e)
     print(f"Open http://localhost:{port}" + ("   LAN: http://<this-laptop-ip>:%d" % port if "--lan" in sys.argv else ""))
     if os.environ.get("SEED_DEMO_USERS", "1") != "0": print("First logins: user names management, pm, planner, siteeng, qe, hse, contractor, production. Password azal2026 (you must change it at first login).")
     try:

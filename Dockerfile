@@ -3,7 +3,7 @@ ENV PYTHONUNBUFFERED=1 DATA_DIR=/data PORT=8080 TRUST_PROXY=1 SEED_DEMO_USERS=0 
 WORKDIR /app
 # Database is SQLite (stdlib). openpyxl/pypdf/reportlab power the letter/form generator (Word is built with stdlib); openpyxl also imports legacy AZAL_*_Project_DB.xlsx files once.
 RUN pip install --no-cache-dir openpyxl pypdf reportlab && useradd -m -u 10001 app && mkdir -p /data && chown app /data
-COPY server.py docs.py watch.py lib.py xer_detail.py index.html shell.html sw.js manifest.webmanifest icon-192.png icon-512.png seed_state.json FenOps_User_Manual.pdf LICENSE.txt COPYRIGHT.txt THIRD_PARTY_NOTICES.txt /app/
+COPY server.py docs.py watch.py lib.py xer_detail.py index.html shell.html sw.js manifest.webmanifest icon-192.png icon-512.png seed_state.json demo_VILLA6BR.json FenOps_User_Manual.pdf LICENSE.txt COPYRIGHT.txt THIRD_PARTY_NOTICES.txt /app/
 COPY legal/release_history.json /app/legal/release_history.json
 COPY site /app/site
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
