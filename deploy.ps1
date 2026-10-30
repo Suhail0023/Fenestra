@@ -1,4 +1,4 @@
-# Fenestra Site: one-script deployment to Fly.io (Windows PowerShell).
+# FenOps: one-script deployment to Fly.io (Windows PowerShell).
 # Right-click this file > Run with PowerShell, or in PowerShell:  .\deploy.ps1
 # If Windows blocks it:  Set-ExecutionPolicy -Scope Process Bypass   then run again.
 # Passwords you type stay on your computer and go straight to Fly as secrets.
@@ -33,7 +33,7 @@ if ((Read-Host "Set up email now? (y/n)") -eq "y") {
   $u = Read-Host "SMTP user (the sending email address)"
   $s += "SMTP_USER=$u"
   $s += "SMTP_PASS=" + (Ask "SMTP password or app password" $true)
-  $s += "SMTP_FROM=Fenestra Site <$u>"
+  $s += "SMTP_FROM=FenOps <$u>"
 }
 if ((Read-Host "Set up WhatsApp with Twilio now? (y/n)") -eq "y") {
   $s += "TWILIO_SID=" + (Read-Host "Twilio Account SID")

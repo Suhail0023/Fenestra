@@ -1,4 +1,0 @@
-setTimeout(async()=>{fixS();role="Project manager";USER={name:"Pat"};set("vo_s","Extra");set("vo_d","d");set("vo_q","50");set("vo_u","m2");set("vo_i",T);set("vo_k","Site");set("vo_t","Site engineer");await voAdd();const v=S.vo[0];
-set("pq"+v.no,"50");set("pr"+v.no,"500");set("pd"+v.no,"0");voProp(v.no);voDecide(v.no,"Approved");set("ss"+v.no,add(T,3));set("sd"+v.no,"10");set("sr"+v.no,S.rates.find(r=>/installation/i.test(r.k)).k);set("st"+v.no,"Team Alpha");voSched(v.no);
-for(const r of ["Project manager","Planning engineer","Site engineer","Management","Main contractor"]){role=r;for(const [k] of NAV){if(!canTab(k))continue;try{const h=V[k]();if(/NaN|undefined/.test(h))console.log(r,k,"has NaN/undefined",(h.match(/.{30}(NaN|undefined).{20}/)||[])[0])}catch(x){console.log(r,k,"ERR",x.message)}}}
-console.log("done");process.exit(0)},50)

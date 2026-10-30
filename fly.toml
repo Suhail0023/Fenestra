@@ -1,4 +1,4 @@
-# Fenestra Site on Fly.io. Change `app` to a unique name (fly launch will offer to do it).
+# FenOps on Fly.io. Change `app` to a unique name (fly launch will offer to do it).
 app = "fenestra-site"
 primary_region = "fra"        # closest to the UAE with volumes: fra (Frankfurt) or otp; change if you prefer
 
